@@ -1,0 +1,57 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35122.118
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeatSaberDownloader", "BeatSaberDownloader\BeatSaberDownloader.csproj", "{2B9F38A2-EFE4-4571-8589-6E61A98177CC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeatSaberDownloader.Data", "BeatSaberDownloader.Data\BeatSaberDownloader.Data.csproj", "{E18018DC-168F-42DF-8208-588146EB6668}"
+EndProject
+Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "BeatSaberDowloader.DB", "BeatSaberDowloader.DB\BeatSaberDowloader.DB.sqlproj", "{29F0F817-7D3E-441A-9A0C-B2EC3C3A6322}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeatSaberDownloader.Library", "BeatSaberDownloader.Library\BeatSaberDownloader.Library.csproj", "{282195A7-384C-41CE-B640-92CC4D7B0B40}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeatSaberDownloader.Client", "BeatSaberDownloader.Client\BeatSaberDownloader.Client.csproj", "{E7B0C344-129A-4CDD-817F-99A6311F3A92}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeatSaberDownloader.Tests", "BeatSaberDownloader.Tests\BeatSaberDownloader.Tests.csproj", "{42E3AA81-A8AD-4A1E-9199-D8A985CE11AD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2B9F38A2-EFE4-4571-8589-6E61A98177CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B9F38A2-EFE4-4571-8589-6E61A98177CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B9F38A2-EFE4-4571-8589-6E61A98177CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B9F38A2-EFE4-4571-8589-6E61A98177CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E18018DC-168F-42DF-8208-588146EB6668}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E18018DC-168F-42DF-8208-588146EB6668}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E18018DC-168F-42DF-8208-588146EB6668}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E18018DC-168F-42DF-8208-588146EB6668}.Release|Any CPU.Build.0 = Release|Any CPU
+		{29F0F817-7D3E-441A-9A0C-B2EC3C3A6322}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29F0F817-7D3E-441A-9A0C-B2EC3C3A6322}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29F0F817-7D3E-441A-9A0C-B2EC3C3A6322}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{29F0F817-7D3E-441A-9A0C-B2EC3C3A6322}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29F0F817-7D3E-441A-9A0C-B2EC3C3A6322}.Release|Any CPU.Build.0 = Release|Any CPU
+		{29F0F817-7D3E-441A-9A0C-B2EC3C3A6322}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{282195A7-384C-41CE-B640-92CC4D7B0B40}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{282195A7-384C-41CE-B640-92CC4D7B0B40}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{282195A7-384C-41CE-B640-92CC4D7B0B40}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{282195A7-384C-41CE-B640-92CC4D7B0B40}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E7B0C344-129A-4CDD-817F-99A6311F3A92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7B0C344-129A-4CDD-817F-99A6311F3A92}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7B0C344-129A-4CDD-817F-99A6311F3A92}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7B0C344-129A-4CDD-817F-99A6311F3A92}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42E3AA81-A8AD-4A1E-9199-D8A985CE11AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42E3AA81-A8AD-4A1E-9199-D8A985CE11AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42E3AA81-A8AD-4A1E-9199-D8A985CE11AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42E3AA81-A8AD-4A1E-9199-D8A985CE11AD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5E3CF69D-11C1-447E-8EA0-F41DA667417B}
+	EndGlobalSection
+EndGlobal
