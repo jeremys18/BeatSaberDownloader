@@ -28,6 +28,6 @@ namespace BeatSaberDownloader.Data.Models
         public Tag[] tags { get; set; } 
         public DateTime updatedAt { get; set; }
         public DateTime uploaded { get;set; }
-        public Version[] Versions { get; set; }
+        public MapVersion[] versions { get; set; }
     }
 }

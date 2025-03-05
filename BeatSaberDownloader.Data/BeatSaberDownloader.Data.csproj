@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Models\DbModels\" />
+    <Folder Include="Models\ViewModels\" />
+  </ItemGroup>
+
 </Project>
