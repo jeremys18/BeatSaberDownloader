@@ -22,7 +22,7 @@ namespace BeatSaberDownloader.Data.Models
         public UserStats stats { get; set; }
         public DateTime suspendedAt { get; set; }
         public bool testplay { get; set; }
-        public Enums.Type type { get; set; }
+        public UserType type { get; set; }
         public bool uniqueSet { get; set; }
         public int uploadLimit { get; set; }
         public bool verifiedMapper { get; set; }

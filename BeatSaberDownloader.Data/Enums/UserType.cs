@@ -2,7 +2,7 @@
 
 namespace BeatSaberDownloader.Data.Enums
 {
-    public enum Type
+    public enum UserType
     {
         DISCORD,
         SIMPLE,
