@@ -11,5 +11,8 @@
 
         // Playlists
         public const string BeatSaverPlaylistsSearchURL = "playlists/latest?after={after}&automapper=true&pageSize={pagesize}";
+
+        // Data
+        public const string BeatSaverDataDirectory = @"d:\BeatSaverData";
     }
 }

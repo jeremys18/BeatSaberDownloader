@@ -1,6 +1,8 @@
 ﻿
 
 using BeatSaberDownloader.Data.Enums;
+using BSSD.DownloadService.Converters;
+using System.Text.Json.Serialization;
 
 namespace BeatSaberDownloader.Data.Models
 {
@@ -25,7 +27,9 @@ namespace BeatSaberDownloader.Data.Models
         public bool qualified { get; set; }
         public bool ranked { get; set; }
         public MapStats stats { get; set; }
-        public Tag[] tags { get; set; } 
+        //[JsonConverter(typeof(TagsConverter))]
+        //public Tag[] tags { get; set; } // Change this back later once we know the real tags since the tags in swagger dont match
+        public string[] tags { get; set; }
         public DateTime updatedAt { get; set; }
         public DateTime uploaded { get;set; }
         public MapVersion[] versions { get; set; }

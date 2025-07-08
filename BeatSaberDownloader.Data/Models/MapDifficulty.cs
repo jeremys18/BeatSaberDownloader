@@ -8,7 +8,8 @@ namespace BeatSaberDownloader.Data.Models
     {
         public float blStars { get; set; }
         public int bombs { get; set; }
-        public Characteristic characteristic { get; set; }
+        //public Characteristic characteristic { get; set; } change back to enum once we know all the current values and how to prase them as the docs dont match the real values sent back to us. This sucks
+        public string characteristic { get; set; } // Temporary workaround for the issue mentioned above
         public bool chroma { get; set; }
         public bool cinema { get; set; }
         public Difficulty difficulty { get; set; }

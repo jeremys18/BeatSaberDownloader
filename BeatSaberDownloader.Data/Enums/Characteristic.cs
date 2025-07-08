@@ -8,7 +8,7 @@ namespace BeatSaberDownloader.Data.Enums
         OneSaber, 
         NoArrows, 
         Rotation90Degree, 
-        Rotation360Degree, 
+        Rotation360Degree,
         Lightshow, 
         Lawless, 
         Legacy
