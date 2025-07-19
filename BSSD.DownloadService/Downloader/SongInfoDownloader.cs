@@ -28,6 +28,7 @@ namespace BSSD.DownloadService.Downloader
                     if (newSongs == null) continue;
                     songs.AddRange(newSongs.docs);
                     var maxDate = newSongs.docs.Select(x => x.uploaded).Max(); // Cant use created date as they dont use that date for the search
+                    Console.WriteLine($"Found {newSongs.docs.Length} songs after {startDate:yyyy-MM-dd}. Next start date will be {maxDate:yyyy-MM-dd}");
                     startDate = maxDate;
                 }
                 else
