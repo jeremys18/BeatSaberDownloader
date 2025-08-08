@@ -53,7 +53,7 @@ namespace BSSD.DownloadService.Downloader
             var filePath = Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, "songs.json");
             Directory.CreateDirectory(BeatSaverConsts.BeatSaverDataDirectory); // Ensure the directory exists
             File.WriteAllText(filePath, text);
-            Console.WriteLine($"Song info downloaded and saved to {filePath}");
+            Console.WriteLine($"Song info downloaded. Found {songs.Length} songs.");
             // start db updator
 
         }
