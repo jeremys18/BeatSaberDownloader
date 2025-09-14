@@ -1,14 +1,14 @@
-using BeatSaberDownloader.UpdateWatchService;
+using BeatSaberDownloader.DBUpdateService;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.File(@"C:\BeatSaber\Logs\UpdateService.log", rollingInterval: RollingInterval.Day)
+    .WriteTo.File(@"C:\BeatSaber\Logs\DBUpdateService.log", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddWindowsService(options =>
 {
-    options.ServiceName = "BeatSaber Update Watch Service";
+    options.ServiceName = "BeatSaber DB Update Service";
 });
 builder.Services.AddHostedService<Worker>();
 builder.Logging.ClearProviders();

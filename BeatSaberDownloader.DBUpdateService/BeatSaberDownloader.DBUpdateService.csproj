@@ -4,7 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>dotnet-BeatSaberDownloader.UpdateWatchService-ac5330db-2075-4452-b911-9a45fff74c35</UserSecretsId>
+    <UserSecretsId>dotnet-BeatSaberDownloader.DBUpdateService-24719e5a-45ac-415a-a9c5-4f8498a75361</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

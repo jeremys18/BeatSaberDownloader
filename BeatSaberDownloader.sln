@@ -21,6 +21,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestDownloader", "TestDownl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeatSaberDownloader.UpdateWatchService", "BeatSaberDownloader.UpdateWatchService\BeatSaberDownloader.UpdateWatchService.csproj", "{B2E2C07E-BCAC-4305-8D9F-8E8BB179B513}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WindowsServices", "WindowsServices", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BeatSaberDownloader.DBUpdateService", "BeatSaberDownloader.DBUpdateService\BeatSaberDownloader.DBUpdateService.csproj", "{1640FC31-7D9E-43DD-8137-3A4CE2E110E7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -65,9 +69,17 @@ Global
 		{B2E2C07E-BCAC-4305-8D9F-8E8BB179B513}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2E2C07E-BCAC-4305-8D9F-8E8BB179B513}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2E2C07E-BCAC-4305-8D9F-8E8BB179B513}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1640FC31-7D9E-43DD-8137-3A4CE2E110E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1640FC31-7D9E-43DD-8137-3A4CE2E110E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1640FC31-7D9E-43DD-8137-3A4CE2E110E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1640FC31-7D9E-43DD-8137-3A4CE2E110E7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B2E2C07E-BCAC-4305-8D9F-8E8BB179B513} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{1640FC31-7D9E-43DD-8137-3A4CE2E110E7} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5E3CF69D-11C1-447E-8EA0-F41DA667417B}
