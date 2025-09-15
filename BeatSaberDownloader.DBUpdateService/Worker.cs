@@ -1,3 +1,6 @@
+using BeatSaberDownloader.Data.Extentions;
+using BeatSaberDownloader.Data.Models;
+using BeatSaberDownloader.Data.Models.UpdateSrvc;
 using Newtonsoft.Json;
 
 namespace BeatSaberDownloader.DBUpdateService
@@ -53,40 +56,137 @@ namespace BeatSaberDownloader.DBUpdateService
 
         public void ProcessUpdate(object sender, FileSystemEventArgs e)
         {
-            _logger.LogInformation($"New file detected. Processing {e.Name}....");
-            // Ensure there is not already a file with a name _{filenum} that is greater than current file (a newer file). If there is then disregard this update and delete file (update will be in later file)
-            if (File.Exists(GetNextFileVersion(e.FullPath)))
+            try
             {
-                _logger.LogInformation($"\tA newer file exists for {e.Name}. Deleting file. Will process update in newer file instead...");
+                var jsonFilename = @"c:\BeatSaber\songs.json";
+                _logger.LogInformation($"New file detected. Processing {e.Name}....");
+                // Ensure there is not already a file with a name _{filenum} that is greater than current file (a newer file). If there is then disregard this update and delete file (update will be in later file)
+                if (File.Exists(GetNextFileVersion(e.FullPath)))
+                {
+                    _logger.LogInformation($"\tA newer file exists for {e.Name}. Deleting file. Will process update in newer file instead...");
+                    File.Delete(e.FullPath);
+                    return;
+                }
+
+                var updateInfo = JsonConvert.DeserializeObject<UpdateInfo>(File.ReadAllText(e.FullPath)) ?? throw new NullReferenceException("Could not decerialize the update file...");
+                var currentJsonText = File.ReadAllText(jsonFilename);
+                var songs = JsonConvert.DeserializeObject<MapDetail[]>(currentJsonText) ?? throw new NullReferenceException("Could not deserialize current song list...");
+
+                if (updateInfo.msg is string)
+                {
+                    var song = songs.First(x => x.id == (string)updateInfo.msg);
+                    songs = songs.Where(x => x.id != (string)updateInfo.msg).ToArray();
+                    DeleteSong(song);
+                }
+                else
+                {
+                    UpdateSong(updateInfo, songs);
+                }
+
+                // Save new state of json
+                File.WriteAllText(jsonFilename, JsonConvert.SerializeObject(songs, Formatting.Indented));
+                _logger.LogInformation($"\tUpdated {jsonFilename}....");
+
+                // Delete the file after processing
+                _logger.LogInformation($"\tFinished processing update. Deleting file {e.Name}...");
                 File.Delete(e.FullPath);
-                return;
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing update file {filename}: {Message}", e.Name, ex.Message);
+            }
+        }
 
-
-            // Process the update for the DB
-            _logger.LogInformation("\tUpdating the song info in the DB....");
-            // TODO: Update DB
+        public void UpdateSong(UpdateInfo info, MapDetail[] songs)
+        {
+            var mapInfo = (MapDetail)info.msg;
+            var song = songs.FirstOrDefault(x => x.id == mapInfo.id);
+            var basePath = @"c:\BeatSaber\SongFiles";
+            var songsToDownload = new List<DownloadInfo>();
 
             // Process the update for the json file
             _logger.LogInformation("\tUpdating the song info in the json file....");
-            var jsonFilename = @"c:\BeatSaber\songs.json";
-            var currentJsonText = File.ReadAllText(jsonFilename);
-            var songs = JsonConvert.DeserializeObject(currentJsonText);
 
-            // TODO: get song
-            var song = ""; // Grab the current song by id 
 
-            // If the update is to the version or filename or author then redownload file (aka, they added a version or renamed the file) otherwise no need to redownload
-            // TODO: Compare the updated info
-            if (false)
+            // Update the song info
+            if (song == null)
             {
-                _logger.LogInformation("\tThe update requires the song be downloaded. Writting info to {id}.json under Songs awaiting download folder...");
-                File.WriteAllText(@"c:\BeatSaber\Songs awaiting download\{id}.json", "{Name: \"Test\", url: \"test url\"}");
+                _logger.LogWarning($"\tSong with id {mapInfo.id} not found in songs.json. Adding to json...");
+                songs = [.. songs, mapInfo];
+                // Todo: Add the song to the DB
+                var files = mapInfo.GetValidFileNames(basePath);
+                songsToDownload.AddRange(files.Select(f => new DownloadInfo
+                {
+                    Filename = f.Value,
+                    DownloadURL = mapInfo.versions.First(x => x.hash == f.Key).downloadURL
+                }));
+            }
+            else
+            {
+                // check song name, author, versions
+                var versionHashes = song.versions.Select(v => v.hash);
+                var deletedVers = versionHashes.Except(mapInfo.versions.Select(v => v.hash)).ToList();
+                var newVers = mapInfo.versions.Select(v => v.hash).Except(versionHashes).ToList();
+                var existingVers = versionHashes.IntersectBy(mapInfo.versions.Select(v => v.hash), v => v).ToList();
+                var hasNameChanged = mapInfo.name != song.name;
+                var hasAuthorChanged = mapInfo.metadata.songAuthorName != song.metadata.songAuthorName;
+                var hasUploaderNameChanged = mapInfo.uploader.name != song.uploader.name;
+                var currFiles = song.GetValidFileNames(basePath);
+                var newFiles = mapInfo.GetValidFileNames(basePath);
+
+                foreach (var del in deletedVers)
+                {
+                    _logger.LogInformation($"\tThe update indicates the version with hash {del} has been deleted. Marking DB entry as deleted and moving the file...");
+                    // TODO: Mark the version as deleted in the DB
+                    // TODO: Move the file to the deleted folder
+                    var currFile = currFiles[del];
+                    File.Move(currFile, $@"c:\BeatSaber\Deleted\{currFile.Split("\\").Last()}");
+                }
+                foreach (var ver in newVers)
+                {
+                    _logger.LogInformation($"\tThe update indicates the version with hash {ver} has been added. Adding to DB and marking for download...");
+                    // TODO: Add the version to the DB
+                    // TODO: Mark the version for download
+                    songsToDownload.Add(new DownloadInfo
+                    {
+                        Filename = newFiles[ver],
+                        DownloadURL = mapInfo.versions.First(v => v.hash == ver).downloadURL
+                    });
+                }
+                if (hasNameChanged || hasAuthorChanged || hasUploaderNameChanged) 
+                {
+                    _logger.LogInformation($"\tThe update indicates the name or the author or the uploader has changed. This changes the filename. Updating the DB entry and renaming the files...");
+                    // TODO: Update the DB
+                    foreach (var ver in existingVers)
+                    {
+                        songsToDownload.Add(new DownloadInfo
+                        {
+                            Filename = newFiles[ver],
+                            DownloadURL = mapInfo.versions.First(v => v.hash == ver).downloadURL
+                        });
+                        var oldFileName = currFiles[ver];
+                        var newFileName = newFiles[ver];
+                        File.Move(oldFileName, newFileName);
+                    }
+                }
             }
 
-            // Delete the file after processing
-            _logger.LogInformation($"\tFinished processing update. Deleting file {e.Name}...");
-            //File.Delete(e.FullPath);
+            foreach (var s in songsToDownload)
+            {
+                var text = JsonConvert.SerializeObject(s, Formatting.Indented);
+                File.WriteAllText($@"c:\BeatSaber\Songs awaiting download\{s}.json", text);
+            }
+        }
+
+        public void DeleteSong(MapDetail song)
+        {
+            _logger.LogInformation("\tDeleting the song from the DB....");
+            _logger.LogInformation("\tMoving the song files to the deleted folder");
+            Directory.GetFiles(@"c:\BeatSaber\Songs", $"{song.id}*").ToList().ForEach(f =>
+            {
+                var filename = Path.GetFileName(f);
+                File.Move(f, $@"c:\BeatSaber\DeletedSongs\{filename}");
+            });
         }
     }
 }
