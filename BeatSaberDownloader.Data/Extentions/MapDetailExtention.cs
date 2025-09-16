@@ -11,18 +11,18 @@ namespace BeatSaberDownloader.Data.Extentions
             var result = new Dictionary<string, string>();
             foreach (var ver in map.versions)
             {
-                var version = ver.hash.Substring(ver.hash.Length-5);
-                var fileName = $"{map.id} - ({map.name}{version} - {map.metadata.songAuthorName} [{map.uploader.name}]).zip";
+                var version = ver.hash.Substring(ver.hash.Length - 5);
+                var fileName = $"{map.id} - ({map.name} [{version}] - {map.metadata.songAuthorName} [{map.uploader.name}]).zip";
                 var filePath = $@"{basePath}\{ReplaceInvalidChars(fileName)}";
 
                 if (filePath.Length > 260)
                 {
-                    fileName = $"{map.id} {version} - {map.name}.zip";
+                    fileName = $"{map.id} [{version}] - {map.name}.zip";
                     filePath = $@"{basePath}\{ReplaceInvalidChars(fileName)}";
 
                     if ($@"{basePath}\{fileName}".Length > 260)
                     {
-                        fileName = $"{map.id} {version} - Song name too long.zip";
+                        fileName = $"{map.id} [{version}] - Song name too long.zip";
                         filePath = $@"{basePath}\{ReplaceInvalidChars(fileName)}";
                     }
                 }
