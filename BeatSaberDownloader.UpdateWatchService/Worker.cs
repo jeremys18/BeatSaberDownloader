@@ -48,10 +48,10 @@ namespace BeatSaberDownloader.UpdateWatchService
         static string GetFileName(string id)
         {
             var fileNum = 1;
-            var fileName = @$"C:\BeatSaber\Updates\{id}.json";
+            var fileName = @$"G:\BeatSaber\Updates\{id}.json";
             while (File.Exists(fileName))
             {
-                fileName = @$"C:\BeatSaber\Updates\{id}_{fileNum++}.json";
+                fileName = @$"G:\BeatSaber\Updates\{id}_{fileNum++}.json";
             }
             return fileName;
         }

@@ -2,7 +2,7 @@ using BeatSaberDownloader.UpdateWatchService;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.File(@"C:\BeatSaber\Logs\UpdateService.log", rollingInterval: RollingInterval.Day)
+    .WriteTo.File(@"G:\BeatSaber\Logs\UpdateService.log", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 var builder = Host.CreateApplicationBuilder(args);
