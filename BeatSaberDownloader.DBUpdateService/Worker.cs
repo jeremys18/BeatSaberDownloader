@@ -98,7 +98,7 @@ namespace BeatSaberDownloader.DBUpdateService
             }
         }
 
-        public void UpdateSong(UpdateInfo info, MapDetail[] songs)
+        public void UpdateSong(UpdateInfo info, List<MapDetail> songs)
         {
             var mapInfo = JsonConvert.DeserializeObject<MapDetail>(info.msg.ToString());
             var song = songs.FirstOrDefault(x => x.id == mapInfo.id);
@@ -113,7 +113,7 @@ namespace BeatSaberDownloader.DBUpdateService
             if (song == null)
             {
                 _logger.LogWarning($"\tSong with id {mapInfo.id} not found in songs.json. Adding to json...");
-                songs = [.. songs, mapInfo];
+                songs.Add(mapInfo);
                 // Todo: Add the song to the DB
                 var files = mapInfo.GetValidFileNames(basePath);
                 songsToDownload.AddRange(files.Select(f => new DownloadInfo
@@ -172,8 +172,8 @@ namespace BeatSaberDownloader.DBUpdateService
                         File.Move(oldFileName, newFileName);
                     }
                 }
-                songs = [.. songs.Where(x => x.id != song.id)];
-                songs = [.. songs, mapInfo];
+                var index = songs.IndexOf(song);
+                songs[index] = mapInfo;
             }
             
 
