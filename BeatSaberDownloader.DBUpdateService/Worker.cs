@@ -70,12 +70,12 @@ namespace BeatSaberDownloader.DBUpdateService
 
                 var updateInfo = JsonConvert.DeserializeObject<UpdateInfo>(File.ReadAllText(e.FullPath)) ?? throw new NullReferenceException("Could not decerialize the update file...");
                 var currentJsonText = File.ReadAllText(jsonFilename);
-                var songs = JsonConvert.DeserializeObject<MapDetail[]>(currentJsonText) ?? throw new NullReferenceException("Could not deserialize current song list...");
+                var songs = JsonConvert.DeserializeObject<List<MapDetail>>(currentJsonText) ?? throw new NullReferenceException("Could not deserialize current song list...");
 
                 if (updateInfo.msg is string)
                 {
                     var song = songs.First(x => x.id == (string)updateInfo.msg);
-                    songs = songs.Where(x => x.id != (string)updateInfo.msg).ToArray();
+                    songs = [.. songs.Where(x => x.id != (string)updateInfo.msg)];
                     DeleteSong(song);
                 }
                 else
