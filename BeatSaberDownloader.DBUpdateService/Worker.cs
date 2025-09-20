@@ -48,7 +48,7 @@ namespace BeatSaberDownloader.DBUpdateService
         public string GetNextFileVersion(string path)
         {
             var nameParts = path.Split('_');
-            var curVersion = nameParts.Length > 1 ? int.Parse(nameParts[1]) : 1;
+            var curVersion = nameParts.Length > 1 ? int.Parse(nameParts[1].Replace(".json", string.Empty)) : 1;
             var nextVer = ++curVersion;
 
             return $"{nameParts[0]}_{nextVer}";
@@ -81,6 +81,7 @@ namespace BeatSaberDownloader.DBUpdateService
                 else
                 {
                     UpdateSong(updateInfo, songs);
+                    
                 }
 
                 // Save new state of json
@@ -117,6 +118,7 @@ namespace BeatSaberDownloader.DBUpdateService
                 var files = mapInfo.GetValidFileNames(basePath);
                 songsToDownload.AddRange(files.Select(f => new DownloadInfo
                 {
+                    Id = mapInfo.id,
                     Filename = f.Value,
                     DownloadURL = mapInfo.versions.First(x => x.hash == f.Key).downloadURL
                 }));
@@ -149,6 +151,7 @@ namespace BeatSaberDownloader.DBUpdateService
                     // TODO: Mark the version for download
                     songsToDownload.Add(new DownloadInfo
                     {
+                        Id = mapInfo.id,
                         Filename = newFiles[ver],
                         DownloadURL = mapInfo.versions.First(v => v.hash == ver).downloadURL
                     });
@@ -169,12 +172,15 @@ namespace BeatSaberDownloader.DBUpdateService
                         File.Move(oldFileName, newFileName);
                     }
                 }
+                songs = [.. songs.Where(x => x.id != song.id)];
+                songs = [.. songs, mapInfo];
             }
+            
 
             foreach (var s in songsToDownload)
             {
                 var text = JsonConvert.SerializeObject(s, Formatting.Indented);
-                File.WriteAllText($@"G:\BeatSaber\Songs awaiting download\{s}.json", text);
+                File.WriteAllText($@"G:\BeatSaber\Songs awaiting download\{s.Id}.json", text);
             }
         }
 
@@ -182,7 +188,7 @@ namespace BeatSaberDownloader.DBUpdateService
         {
             _logger.LogInformation("\tDeleting the song from the DB....");
             _logger.LogInformation("\tMoving the song files to the deleted folder");
-            Directory.GetFiles(@"G:\BeatSaber\Songs", $"{song.id}*").ToList().ForEach(f =>
+            Directory.GetFiles(@"G:\BeatSaber\SongFiles", $"{song.id}*").ToList().ForEach(f =>
             {
                 var filename = Path.GetFileName(f);
                 File.Move(f, $@"G:\BeatSaber\DeletedSongs\{filename}");
