@@ -58,6 +58,7 @@ namespace BeatSaberDownloader.DBUpdateService
         {
             try
             {
+                Task.Delay(2000).Wait(); // Wait for 2 seconds to ensure file is fully written
                 var jsonFilename = @"G:\BeatSaber\songs.json";
                 _logger.LogInformation($"New file detected. Processing {e.Name}....");
                 // Ensure there is not already a file with a name _{filenum} that is greater than current file (a newer file). If there is then disregard this update and delete file (update will be in later file)
@@ -119,6 +120,7 @@ namespace BeatSaberDownloader.DBUpdateService
                 songsToDownload.AddRange(files.Select(f => new DownloadInfo
                 {
                     Id = mapInfo.id,
+                    Hash = f.Key.Substring(f.Key.Length - 5),
                     Filename = f.Value,
                     DownloadURL = mapInfo.versions.First(x => x.hash == f.Key).downloadURL
                 }));
@@ -142,7 +144,12 @@ namespace BeatSaberDownloader.DBUpdateService
                     // TODO: Mark the version as deleted in the DB
                     // TODO: Move the file to the deleted folder
                     var currFile = currFiles[del];
-                    File.Move(currFile, $@"G:\BeatSaber\Deleted\{currFile.Split("\\").Last()}");
+                    if(!File.Exists(currFile))
+                    {
+                        _logger.LogWarning($"\tThe file {currFile} does not exist. Cannot move to deleted folder.");
+                        continue;
+                    }
+                    File.Move(currFile, $@"G:\BeatSaber\DeletedSongs\{currFile.Split("\\").Last()}");
                 }
                 foreach (var ver in newVers)
                 {
@@ -152,6 +159,7 @@ namespace BeatSaberDownloader.DBUpdateService
                     songsToDownload.Add(new DownloadInfo
                     {
                         Id = mapInfo.id,
+                        Hash = ver.Substring(ver.Length-5),
                         Filename = newFiles[ver],
                         DownloadURL = mapInfo.versions.First(v => v.hash == ver).downloadURL
                     });
@@ -180,7 +188,7 @@ namespace BeatSaberDownloader.DBUpdateService
             foreach (var s in songsToDownload)
             {
                 var text = JsonConvert.SerializeObject(s, Formatting.Indented);
-                File.WriteAllText($@"G:\BeatSaber\Songs awaiting download\{s.Id}.json", text);
+                File.WriteAllText($@"G:\BeatSaber\Songs awaiting download\{s.Id}-{s.Hash}.json", text);
             }
         }
 
