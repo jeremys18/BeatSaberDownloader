@@ -20,7 +20,7 @@ namespace BeatSaberDownloader.DBUpdateService
                 IncludeSubdirectories = false
             };
 
-            _watcher.Created += (sender, e) => ProcessUpdate(sender, e);
+            _watcher.Created += (sender, e) => ProcessUpdateAsync(sender, e);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -54,7 +54,7 @@ namespace BeatSaberDownloader.DBUpdateService
             return $"{nameParts[0]}_{nextVer}";
         }
 
-        public void ProcessUpdate(object sender, FileSystemEventArgs e)
+        public void ProcessUpdateAsync(object sender, FileSystemEventArgs e)
         {
             try
             {
@@ -64,18 +64,31 @@ namespace BeatSaberDownloader.DBUpdateService
                 // Ensure there is not already a file with a name _{filenum} that is greater than current file (a newer file). If there is then disregard this update and delete file (update will be in later file)
                 if (File.Exists(GetNextFileVersion(e.FullPath)))
                 {
-                    _logger.LogInformation($"\tA newer file exists for {e.Name}. Deleting file. Will process update in newer file instead...");
+                    _logger.LogWarning($"\tA newer file exists for {e.Name}. Deleting file. Will process update in newer file instead...");
                     File.Delete(e.FullPath);
                     return;
                 }
 
                 var updateInfo = JsonConvert.DeserializeObject<UpdateInfo>(File.ReadAllText(e.FullPath)) ?? throw new NullReferenceException("Could not decerialize the update file...");
-                var currentJsonText = File.ReadAllText(jsonFilename);
+
+                var currentJsonText = string.Empty;
+                using (var stream = jsonFilename.GetFileAccess(FileMode.Open, FileAccess.Read))
+                using (var reader = new StreamReader(stream))
+                {
+                    currentJsonText = reader.ReadToEnd();
+                }
+
                 var songs = JsonConvert.DeserializeObject<List<MapDetail>>(currentJsonText) ?? throw new NullReferenceException("Could not deserialize current song list...");
 
                 if (updateInfo.msg is string)
                 {
-                    var song = songs.First(x => x.id == (string)updateInfo.msg);
+                    var song = songs.FirstOrDefault(x => x.id == (string)updateInfo.msg);
+                    if(song == null)
+                    {
+                        _logger.LogWarning($"\tSong with id {(string)updateInfo.msg} not found in songs.json. Cannot delete non-existent song...");
+                        File.Delete(e.FullPath);
+                        return;
+                    }
                     songs = [.. songs.Where(x => x.id != (string)updateInfo.msg)];
                     DeleteSong(song);
                 }
@@ -86,7 +99,13 @@ namespace BeatSaberDownloader.DBUpdateService
                 }
 
                 // Save new state of json
-                File.WriteAllText(jsonFilename, JsonConvert.SerializeObject(songs, Formatting.Indented));
+                using (var stream = jsonFilename.GetFileAccess(FileMode.Create, FileAccess.Write))
+                using (var writer = new StreamWriter(stream))
+                {
+                    writer.Write(JsonConvert.SerializeObject(songs, Formatting.Indented));
+                    writer.Flush();
+                    writer.Close();
+                }
                 _logger.LogInformation($"\tUpdated {jsonFilename}....");
 
                 // Delete the file after processing
@@ -146,7 +165,7 @@ namespace BeatSaberDownloader.DBUpdateService
                     var currFile = currFiles[del];
                     if(!File.Exists(currFile))
                     {
-                        _logger.LogWarning($"\tThe file {currFile} does not exist. Cannot move to deleted folder.");
+                        _logger.LogInformation($"\tThe file {currFile} does not exist. Cannot move to deleted folder.");
                         continue;
                     }
                     File.Move(currFile, $@"G:\BeatSaber\DeletedSongs\{currFile.Split("\\").Last()}");
@@ -170,13 +189,13 @@ namespace BeatSaberDownloader.DBUpdateService
                     // TODO: Update the DB
                     foreach (var ver in existingVers)
                     {
-                        songsToDownload.Add(new DownloadInfo
-                        {
-                            Filename = newFiles[ver],
-                            DownloadURL = mapInfo.versions.First(v => v.hash == ver).downloadURL
-                        });
                         var oldFileName = currFiles[ver];
                         var newFileName = newFiles[ver];
+                        if (!File.Exists(oldFileName))
+                        {
+                            _logger.LogWarning($"\tThe file {oldFileName} does not exist. Cannot rename to {newFileName}.");
+                            continue;
+                        }
                         File.Move(oldFileName, newFileName);
                     }
                 }
@@ -199,6 +218,11 @@ namespace BeatSaberDownloader.DBUpdateService
             Directory.GetFiles(@"G:\BeatSaber\SongFiles", $"{song.id}*").ToList().ForEach(f =>
             {
                 var filename = Path.GetFileName(f);
+                if(!File.Exists($@"G:\BeatSaber\DeletedSongs\{filename}"))
+                {
+                    _logger.LogWarning($"File {filename} does not exist. Cannot move it...");
+                    return;
+                }
                 File.Move(f, $@"G:\BeatSaber\DeletedSongs\{filename}");
             });
         }
