@@ -164,10 +164,17 @@ namespace BeatSaberDownloader.DBUpdateService
                     var currFile = currFiles[del];
                     if(!File.Exists(currFile))
                     {
-                        _logger.LogInformation($"\tThe file {currFile} does not exist. Cannot move to deleted folder.");
-                        continue;
+                        _logger.LogWarning($"\tThe file {currFile} does not exist. Cannot move to deleted folder.");
                     }
-                    File.Move(currFile, $@"G:\BeatSaber\DeletedSongs\{currFile.Split("\\").Last()}");
+                    else if (File.Exists($@"G:\BeatSaber\DeletedSongs\{currFile.Split("\\").Last()}"))
+                    {
+                        _logger.LogWarning($"\tThe file {currFile} is already in the deleted folder. Deleting file from song folder...");
+                        File.Delete(currFile);
+                    }
+                    else
+                    {
+                        File.Move(currFile, $@"G:\BeatSaber\DeletedSongs\{currFile.Split("\\").Last()}");
+                    }      
                 }
                 foreach (var ver in newVers)
                 {
@@ -194,7 +201,7 @@ namespace BeatSaberDownloader.DBUpdateService
                             Id = mapInfo.id,
                             Hash = v.Substring(v.Length - 5),
                             Filename = newFiles[v],
-                            DownloadURL = .downloadURL
+                            DownloadURL = mInfo.downloadURL
                         });
                     }
                 }

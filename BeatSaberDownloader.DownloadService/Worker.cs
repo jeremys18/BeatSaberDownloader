@@ -47,7 +47,7 @@ namespace BeatSaberDownloader.DownloadService
                     var jsonFilePath = @"G:\BeatSaber\songs.json";
                     var songData = string.Empty;
                     using (var stream = jsonFilePath.GetFileAccess(FileMode.Open, FileAccess.Read))
-                    using(var reader = new StreamReader(stream))
+                    using (var reader = new StreamReader(stream))
                     {
                         songData = await reader.ReadToEndAsync();
                     }
@@ -65,13 +65,11 @@ namespace BeatSaberDownloader.DownloadService
                             DownloadURL = curUrl
                         });
                     }
-                    catch(Exception ee)
+                    catch (Exception ee)
                     {
                         _logger.LogError("Backup URL failed. {e}", ee.Message);
                     }
                 }
-
-                _logger.LogInformation($"Downloaded new file: {info.Filename}", e.FullPath);
 
                 // Delete the file
                 File.Delete(e.FullPath);
@@ -83,7 +81,7 @@ namespace BeatSaberDownloader.DownloadService
             }
         }
 
-        private static async Task DownloadSong(DownloadInfo info)
+        private async Task DownloadSong(DownloadInfo info)
         {
             var httpClient = new HttpClient();
             using var response = await httpClient.GetAsync(info.DownloadURL, HttpCompletionOption.ResponseContentRead);
@@ -92,6 +90,12 @@ namespace BeatSaberDownloader.DownloadService
             await using var contentStream = await response.Content.ReadAsStreamAsync();
             await using var fileStream = new FileStream(info.Filename, FileMode.Create, FileAccess.Write, FileShare.None);
             await contentStream.CopyToAsync(fileStream);
+            await contentStream.FlushAsync();
+            _logger.LogInformation($"Downloaded new file: {info.Filename}");
+            await contentStream.DisposeAsync();
+            await fileStream.DisposeAsync();
+            response.Dispose();
+            httpClient.Dispose();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
