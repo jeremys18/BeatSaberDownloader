@@ -161,7 +161,6 @@ namespace BeatSaberDownloader.DBUpdateService
                 {
                     _logger.LogInformation($"\tThe update indicates the version with hash {del} has been deleted. Marking DB entry as deleted and moving the file...");
                     // TODO: Mark the version as deleted in the DB
-                    // TODO: Move the file to the deleted folder
                     var currFile = currFiles[del];
                     if(!File.Exists(currFile))
                     {
@@ -174,7 +173,6 @@ namespace BeatSaberDownloader.DBUpdateService
                 {
                     _logger.LogInformation($"\tThe update indicates the version with hash {ver} has been added. Adding to DB and marking for download...");
                     // TODO: Add the version to the DB
-                    // TODO: Mark the version for download
                     songsToDownload.Add(new DownloadInfo
                     {
                         Id = mapInfo.id,
@@ -182,6 +180,23 @@ namespace BeatSaberDownloader.DBUpdateService
                         Filename = newFiles[ver],
                         DownloadURL = mapInfo.versions.First(v => v.hash == ver).downloadURL
                     });
+                }
+                foreach(var v in existingVers)
+                {
+                    var mInfo = mapInfo.versions.First(x => x.hash == v);
+                    var sInfo = song.versions.First(x => x.hash == v);
+                    if (mInfo.downloadURL != sInfo.downloadURL && !File.Exists(currFiles[v]))
+                    {
+                        // The url changed. We need to re-download the file.
+                        _logger.LogInformation($"\tThe file {currFiles[v]} does not exist. Marking for download...");
+                        songsToDownload.Add(new DownloadInfo
+                        {
+                            Id = mapInfo.id,
+                            Hash = v.Substring(v.Length - 5),
+                            Filename = newFiles[v],
+                            DownloadURL = .downloadURL
+                        });
+                    }
                 }
                 if (hasNameChanged || hasAuthorChanged || hasUploaderNameChanged) 
                 {

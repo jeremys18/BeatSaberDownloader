@@ -1,5 +1,6 @@
 ﻿
 using BeatSaberDownloader.Data.Models;
+using BSSD.DownloadService.Downloader;
 using Newtonsoft.Json;
 using TestDownloader;
 
@@ -9,137 +10,102 @@ internal class Program
 {
     private static async Task Main(string[] args)
     {
-        //var basePath = @"g:\BeatSaber\SongFiles";
-        //var jsonFilename = @"g:\BeatSaber\songs.json";
-        //var currentJsonText = File.ReadAllText(jsonFilename);
-        //var songs = JsonConvert.DeserializeObject<MapDetail[]>(currentJsonText) ?? throw new NullReferenceException("Could not deserialize current song list...");
-        //var missingCount = 0;
-        //var missingSongs = new List<MapDetail>();
-        //var dups = songs.DistinctBy(x => x.id).ToList();
-        //File.WriteAllText(@"g:\BeatSaber\songs2.json", JsonConvert.SerializeObject(dups, Formatting.Indented));
-        //foreach (var song in songs.OrderByDescending(x => x.id))
-        //{
-        //    var filesNames = song.GetValidFileNames(basePath);
-        //    foreach (var file in filesNames.Keys)
-        //    {
-        //        try
-        //        {
-        //            if (File.Exists(filesNames[file]) && new FileInfo(filesNames[file]).Length > 0)
-        //            {
-        //               // Console.WriteLine($"{song.id} - {song.name} already exists. Skipping...");
-        //                continue;
-        //            }
-        //            else if (File.Exists(filesNames[file]))
-        //            {
-        //                Console.WriteLine($"{song.id} - {song.name} already exists but has no size. Deleting...");
-        //                File.Delete(filesNames[file]);
-        //            }
 
-        //            var httpClient = new HttpClient();
-        //            using var response = await httpClient.GetAsync(song.versions.First(x => x.hash == file).downloadURL, HttpCompletionOption.ResponseHeadersRead);
-        //            response.EnsureSuccessStatusCode();
+        await DoWork();
+        //DoWork2();
+    }
 
-        //            await using var contentStream = await response.Content.ReadAsStreamAsync();
-        //            await using var fileStream = new FileStream(filesNames[file], FileMode.Create, FileAccess.Write, FileShare.None);
+    private static void DoWork2()
+    {
+        var basePath = @"g:\BeatSaber\SongFiles";
+        var jsonFilename = @"g:\BeatSaber\songs.json";
+        var currentJsonText = File.ReadAllText(jsonFilename);
+        var songs = JsonConvert.DeserializeObject<MapDetail[]>(currentJsonText) ?? throw new NullReferenceException("Could not deserialize current song list...");
+       
+        var songFiles = Directory.GetFiles(basePath, "*.zip", SearchOption.TopDirectoryOnly).Select(x => Path.GetFileName(x)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var songListFiles = songs.Select(x => x.GetValidFileNames(basePath)).SelectMany(x => x.Values).Select(x => Path.GetFileName(x)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var missingFiles = songListFiles.Except(songFiles).ToList();
+        var missing2 = songFiles.Except(songListFiles).ToList();
 
-        //            await contentStream.CopyToAsync(fileStream);
-        //            Console.WriteLine($"Downloaded: {song.id} - {song.name}");
-
-        //            if (!File.Exists(filesNames[file]))
-        //            {
-        //                Console.WriteLine($"{song.id} - {song.name} failed to download...");
-        //            }
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            missingSongs.Add(song);
-        //            missingCount++;
-        //            Console.WriteLine($"Error downloading {song.id} - {song.name}: {ex.Message}");
-        //        }
-        //    }
-        //}
-
-        //var songCount = songs.SelectMany(x => x.versions).Count();
-        //Console.WriteLine($"Total Songs: {songCount}");
-        //Console.WriteLine($"{missingCount} missing");
-        //Console.WriteLine($"Should have {songCount - missingCount} songs");
-        //var songData = JsonConvert.SerializeObject(missingSongs, Formatting.Indented);
-        //File.WriteAllText(@"g:\BeatSaber\missingsongs.json", songData);
-
-
-        var items = new Testy[]
+        missing2.ForEach(x =>
         {
-            new Testy
+            Console.WriteLine(x); 
+            if(File.Exists(@$"g:\BeatSaber\DeletedSongs\{x}"))
             {
-                Id = "1",
-                Name = "A",
-                Items = new Item[]
+                Console.WriteLine($"Also exists in deleted songs, skipping move...");
+                File.Delete(@$"g:\BeatSaber\SongFiles\{x}");
+                return;
+            }
+            File.Move(@$"g:\BeatSaber\SongFiles\{x}", Path.Combine(@"g:\BeatSaber\DeletedSongs", x));
+        });
+    }
+
+    private static async Task DoWork()
+    {
+        try
+        {
+            var basePath = @"g:\BeatSaber\SongFiles";
+            var jsonFilename = @"g:\BeatSaber\songs.json";
+            var currentJsonText = File.ReadAllText(jsonFilename);
+            var songs = JsonConvert.DeserializeObject<MapDetail[]>(currentJsonText) ?? throw new NullReferenceException("Could not deserialize current song list...");
+            var missingCount = 0;
+            var missingSongs = new List<MapDetail>();
+            var dups = songs.DistinctBy(x => x.id).ToList();
+            File.WriteAllText(@"g:\BeatSaber\songs2.json", JsonConvert.SerializeObject(dups, Formatting.Indented));
+            foreach (var song in songs.OrderByDescending(x => x.id))
+            {
+                var filesNames = song.GetValidFileNames(basePath);
+                foreach (var file in filesNames.Keys)
                 {
-                    new Item
+                    try
                     {
-                        Id = "Z",
-                        Name = "AA"
+                        if (File.Exists(filesNames[file]) && new FileInfo(filesNames[file]).Length > 0)
+                        {
+                            //Console.WriteLine($"{song.id} - {song.name} already exists. Skipping...");
+                            continue;
+                        }
+                        else if (File.Exists(filesNames[file]))
+                        {
+                            Console.WriteLine($"{song.id} - {song.name} already exists but has no size. Deleting...");
+                            File.Delete(filesNames[file]);
+                        }
+
+                        var httpClient = new HttpClient();
+                        using var response = await httpClient.GetAsync(song.versions.First(x => x.hash == file).downloadURL, HttpCompletionOption.ResponseContentRead);
+                        response.EnsureSuccessStatusCode();
+
+                        await using var contentStream = await response.Content.ReadAsStreamAsync();
+                        await using var fileStream = new FileStream(filesNames[file], FileMode.Create, FileAccess.Write, FileShare.None);
+
+                        await contentStream.CopyToAsync(fileStream);
+                        Console.WriteLine($"Downloaded: {song.id} - {song.name}");
+
+                        if (!File.Exists(filesNames[file]))
+                        {
+                            Console.WriteLine($"{song.id} - {song.name} failed to download...");
+                        }
                     }
-                }
-            },
-            new Testy
-            {
-                Id = "2",
-                Name = "B",
-                Items = new Item[]
-                {
-                    new Item
+                    catch (Exception ex)
                     {
-                        Id = "Y",
-                        Name = "BB",
+                        missingSongs.Add(song);
+                        missingCount++;
+                        Console.WriteLine($"Error downloading {song.id} - {song.name}: {ex.Message}");
                     }
                 }
             }
-        };
 
-        var data = JsonConvert.SerializeObject(items, Formatting.Indented);
-        File.WriteAllText(@"C:\Users\grabb\Documents\test.json", data);
-
-        var data2 = File.ReadAllText(@"C:\Users\grabb\Documents\test.json");
-        var items2 = JsonConvert.DeserializeObject<List<Testy>>(data2);
-        AlterList(items2);
-
-        var data3 = JsonConvert.SerializeObject(items2, Formatting.Indented);
-        File.WriteAllText(@"C:\Users\grabb\Documents\test2.json", data3);
-        //Console.ReadLine();
-
-    }
-
-    public static void AlterList(List<Testy> list)
-    {
-        var replacement = new Testy
+            var songCount = songs.SelectMany(x => x.versions).Count();
+            Console.WriteLine($"Total Songs: {songCount}");
+            Console.WriteLine($"{missingCount} missing");
+            Console.WriteLine($"Should have {songCount - missingCount} songs");
+            //var songData = JsonConvert.SerializeObject(missingSongs, Formatting.Indented);
+            //File.WriteAllText(@"g:\BeatSaber\missingsongs.json", songData);
+            Console.ReadLine();
+        }
+        catch (Exception ex)
         {
-            Id = "1",
-            Name = "A",
-            Items = new[] {
-                new Item
-                {
-                    Id = "XYZ",
-                    Name = "yolo"
-                }
-            }
-        };
-
-        var index = list.FindIndex(item => item.Id == replacement.Id);
-        list[index] = replacement;
-
-    }
-    
-    public class Testy
-    {
-        public string Id { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public Item[] Items { get; set; } = [];
-    }
-
-    public class Item
-    {
-        public string Id { get; set; }
-        public string Name { get; set; }
+            Console.WriteLine(ex.Message);
+            Console.ReadLine();
+        }
     }
 }

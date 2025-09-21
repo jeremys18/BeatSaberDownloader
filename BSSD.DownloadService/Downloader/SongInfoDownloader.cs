@@ -19,14 +19,15 @@ namespace BSSD.DownloadService.Downloader
             var now = DateTime.Now;
             var songs = new List<MapDetail>();
 
-            while (startDate < now.AddDays(-1))
+            while (startDate <= now)
             {
                 var songString = await BeatSaverAPI.SearchSongsAsync(startDate);
                 if (!string.IsNullOrEmpty(songString))
                 {
                     var newSongs = JsonConvert.DeserializeObject<SearchResponse>(songString) ?? null;
                     if (newSongs == null) continue;
-                    songs.AddRange(newSongs.docs);
+                    var distinctSongs = newSongs.docs.ExceptBy(songs.Select(x => x.id), x => x.id).ToList();
+                    songs.AddRange(distinctSongs);
                     var maxDate = newSongs.docs.Select(x => x.uploaded).Max(); // Cant use created date as they dont use that date for the search
                     Console.WriteLine($"Found {newSongs.docs.Length} songs after {startDate:yyyy-MM-dd}. Next start date will be {maxDate:yyyy-MM-dd}");
                     startDate = maxDate;
