@@ -1,4 +1,5 @@
-﻿using BeatSaberDownloader.Server.Services.MediaR.Queries.GetAllSongs;
+﻿using BeatSaberDownloader.Data.Consts;
+using BeatSaberDownloader.Server.Services.MediaR.Queries.GetAllSongs;
 using BeatSaberDownloader.Server.Services.MediaR.Queries.GetSong;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -29,8 +30,8 @@ namespace BeatSaberDownloader.Controllers
         [HttpGet]
         public async Task<IActionResult> GetSongFile([FromRoute] GetSongQuery query)
         {
-            if (!Request.Headers.ContainsKey(Consts.AppTokenHeaderName) || Request.Headers[Consts.AppTokenHeaderName] != Consts.AppTokenValue
-                || !Request.Headers.ContainsKey(Consts.YoloHoloHeaderName) || Request.Headers[Consts.YoloHoloHeaderName] != Consts.YoloHoloHeaderValue)
+            if (!Request.Headers.ContainsKey(ServerConsts.AppTokenHeaderName) || Request.Headers[ServerConsts.AppTokenHeaderName] != ServerConsts.AppTokenValue
+                || !Request.Headers.ContainsKey(ServerConsts.YoloHoloHeaderName) || Request.Headers[ServerConsts.YoloHoloHeaderName] != ServerConsts.YoloHoloHeaderValue)
             {
                 return Unauthorized();
             }

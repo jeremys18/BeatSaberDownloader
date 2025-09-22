@@ -14,5 +14,7 @@
 
         // Data
         public const string BeatSaverDataDirectory = @"c:\BeatSaver";
+
+        
     }
 }

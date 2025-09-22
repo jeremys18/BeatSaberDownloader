@@ -2,7 +2,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace BeatSaberDownloader.Controllers
+namespace BeatSaberDownloader.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
