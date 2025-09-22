@@ -1,37 +1,39 @@
-﻿using BeatSaberDownloader.Data.Models;
+﻿using BeatSaberDownloader.Data.Extentions;
+using BeatSaberDownloader.Data.Models;
+using BeatSaberDownloader.Data.Models.BareModels;
 using MediatR;
 using Newtonsoft.Json;
 
 namespace BeatSaberDownloader.Server.Services.MediaR.Queries.GetAllSongs
 {
-    public class GetAllSongsQueryHandler : IRequestHandler<GetAllSongsQuery, MapDetail[]?>
+    public class GetAllSongsQueryHandler : IRequestHandler<GetAllSongsQuery, Song[]?>
     {
-        public async Task<MapDetail[]?> Handle(GetAllSongsQuery request, CancellationToken cancellationToken)
+        public async Task<Song[]?> Handle(GetAllSongsQuery query, CancellationToken cancellationToken)
         {
 
             // For now we just use the JSon file for the current list. Will switch to Db later on
-            var songs = await GetFileTextAsync();
-            var songList = JsonConvert.DeserializeObject<MapDetail[]>(songs);
-            return songList;
-        }
+            var songs = await @"G:\BeatSaber\Songs.json".GetFileTextAsync();
+            var songList = JsonConvert.DeserializeObject<MapDetail[]>(songs) ?? [];
+            var result = new List<Song>();
 
-        private static async Task<string> GetFileTextAsync()
-        {
-            var keepTrying = true;
-            while (keepTrying)
+            foreach(var song in songList)
             {
-                try
+                var fileNames = song.GetValidFileNames(query.SongBasePath);
+                foreach(var ver in song.versions)
                 {
-                    var text = await File.ReadAllTextAsync(@"G:\BeatSaber\Songs.json");
-                    keepTrying = false;
-                    return text;
-                }
-                catch (Exception ex)
-                {
-                    Thread.Sleep(1000); // Wait for the file to be availble
+                    result.Add(new Song
+                    {
+                        Id = song.id,
+                        Name = song.name,
+                        BeatSaverDownloadUrl = ver.downloadURL,
+                        FileName = fileNames[ver.hash],
+                        VersionHash = ver.hash
+                    });
                 }
             }
-            return string.Empty;
+
+            songList = null;
+            return [.. result];
         }
     }
 }
