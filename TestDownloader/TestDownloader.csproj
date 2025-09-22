@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BeatSaberDownloader.Data\BeatSaberDownloader.Data.csproj" />
-    <ProjectReference Include="..\BSSD.DownloadService\BSSD.DownloadService.csproj" />
   </ItemGroup>
 
 </Project>

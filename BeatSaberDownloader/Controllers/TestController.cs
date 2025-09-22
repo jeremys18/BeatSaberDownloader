@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using BeatSaberDownloader.Server.Services.MediaR.Queries.GetSong;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 
 namespace BeatSaberDownloader.Controllers
 {
@@ -8,6 +8,13 @@ namespace BeatSaberDownloader.Controllers
     [ApiController]
     public class TestController : ControllerBase
     {
+        private IMediator _mediator;
+
+        public TestController(IMediator mediator)
+        {
+            _mediator = mediator;
+        }
+
         [Route("running")]
         [HttpGet]
         public IActionResult Test()
@@ -28,18 +35,18 @@ namespace BeatSaberDownloader.Controllers
             return File(fileContent, "application/zip");
         }
 
-        [Route("run")]
-        [HttpPost]
-        public async Task<IActionResult> TestProcess()
-        {
-            var downloader = new Downloader(_logger);
+        //[Route("run")]
+        //[HttpPost]
+        //public async Task<IActionResult> TestProcess()
+        //{
+        //    var downloader = new Downloader(_logger);
 
-            // Get current list of songs from their server
-            var latestSongs = await downloader.GetAllSongInfoForAllFiltersAsync();
+        //    // Get current list of songs from their server
+        //    var latestSongs = await downloader.GetAllSongInfoForAllFiltersAsync();
 
-            new BeatSaverRepository(_configuration, _logger).SaveSongsToDb(latestSongs.docs);
+        //    new BeatSaverRepository(_configuration, _logger).SaveSongsToDb(latestSongs.docs);
 
-            return Ok();
-        }
+        //    return Ok();
+        //}
     }
 }
