@@ -72,11 +72,16 @@ namespace BeatSaberDownloader.DBUpdateService
                 var updateInfo = JsonConvert.DeserializeObject<UpdateInfo>(File.ReadAllText(e.FullPath)) ?? throw new NullReferenceException("Could not decerialize the update file...");
 
                 var currentJsonText = string.Empty;
-                using (var stream = jsonFilename.GetFileAccess(FileMode.Open, FileAccess.Read))
-                using (var reader = new StreamReader(stream))
-                {
-                    currentJsonText = reader.ReadToEnd();
-                }
+                var stream = jsonFilename.GetFileAccess(FileMode.Open, FileAccess.Read);
+                var reader = new StreamReader(stream);
+                currentJsonText = reader.ReadToEnd();
+                reader.Close();
+                stream.Close();
+                reader.Dispose();
+                stream.Dispose();
+                reader = null;
+                stream = null;
+
 
                 var songs = JsonConvert.DeserializeObject<List<MapDetail>>(currentJsonText) ?? throw new NullReferenceException("Could not deserialize current song list...");
 
@@ -99,23 +104,35 @@ namespace BeatSaberDownloader.DBUpdateService
                 }
 
                 // Save new state of json
-                using (var stream = jsonFilename.GetFileAccess(FileMode.Create, FileAccess.Write))
-                using (var writer = new StreamWriter(stream))
-                {
-                    writer.Write(JsonConvert.SerializeObject(songs, Formatting.Indented));
-                    writer.Flush();
-                    writer.Close();
-                }
+                var stream2 = jsonFilename.GetFileAccess(FileMode.Create, FileAccess.Write);
+                var writer = new StreamWriter(stream2);
+                
+                writer.Write(JsonConvert.SerializeObject(songs, Formatting.Indented));
+                writer.Flush();
+                writer.Close();
+                stream2.Close();
+                writer.Dispose();
+                stream2.Dispose();
+                writer = null;
+                stream2 = null;
+                songs = null;
+                updateInfo = null;
+                currentJsonText = null;
+
                 _logger.LogInformation($"\tUpdated {jsonFilename}....");
 
                 // Delete the file after processing
                 _logger.LogInformation($"\tFinished processing update. Deleting file {e.Name}...");
                 File.Delete(e.FullPath);
+                
+
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing update file {filename}: {Message}", e.Name, ex.Message);
             }
+            
+            GC.Collect();
         }
 
         public void UpdateSong(UpdateInfo info, List<MapDetail> songs)
