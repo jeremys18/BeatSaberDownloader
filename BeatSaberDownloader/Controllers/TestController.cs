@@ -32,6 +32,10 @@ namespace BeatSaberDownloader.Controllers
                 VersionHash = "37b0e0b00e5e4a82047a2190ac20747e3016e7ea"
             };
             var fileContent = await _mediator.Send(query);
+            if (fileContent == null)
+            {
+                return NotFound();
+            }
             return File(fileContent, "application/zip");
         }
 
