@@ -16,6 +16,9 @@ namespace BeatSaberDownloader.Server.Services.MediaR.Queries.GetSong
                 var songList = JsonConvert.DeserializeObject<MapDetail[]>(songFileText);
                 var songInfo = songList.FirstOrDefault(x => x.id == query.SongId);
                 var fileNames = songInfo.GetValidFileNames(@"G:BeatSaber\SongFiles");
+                songFileText = null;
+                songList = null;
+                songInfo = null;
 
                 result = await File.ReadAllBytesAsync(fileNames[query.VersionHash], cancellationToken);
             }
