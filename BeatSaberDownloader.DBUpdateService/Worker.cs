@@ -257,9 +257,10 @@ namespace BeatSaberDownloader.DBUpdateService
             Directory.GetFiles(@"G:\BeatSaber\SongFiles", $"{song.id}*").ToList().ForEach(f =>
             {
                 var filename = Path.GetFileName(f);
-                if(!File.Exists($@"G:\BeatSaber\DeletedSongs\{filename}"))
+                if(File.Exists($@"G:\BeatSaber\DeletedSongs\{filename}"))
                 {
-                    _logger.LogWarning($"File {filename} does not exist. Cannot move it...");
+                    _logger.LogWarning($"\tFile {filename} has already been deleted. Deleting song file instead...");
+                    File.Delete(f);
                     return;
                 }
                 File.Move(f, $@"G:\BeatSaber\DeletedSongs\{filename}");
