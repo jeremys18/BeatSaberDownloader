@@ -10,8 +10,8 @@ internal class Program
 {
     private static async Task Main(string[] args)
     {
-
-        await DoWork();
+        await Downlaoder.StartAsync();
+        //await DoWork();
         //DoWork2();
     }
 
