@@ -1,5 +1,8 @@
+using BeatSaberDownloader.Data.Consts;
+using Newtonsoft.Json;
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace BeatSaberDownloader.UpdateWatchService
@@ -33,8 +36,26 @@ namespace BeatSaberDownloader.UpdateWatchService
                         var type = Regex.Match(message, @"type"":\s*""(\w+)""").Groups[1].Value;
                         var id = type == "MAP_DELETE" ? Regex.Match(message, @"msg"":\s*""(\w+)""").Groups[1].Value : Regex.Match(message, @"id"":\s*""(\w+)""").Groups[1].Value;
                         _logger.LogInformation($"Received message: {type} Id: {id}");
+                        var requiresTemp = !IsValidJson(message);
 
-                        File.WriteAllText(GetFileName(id), message); // Save the message to a file
+                        // This is VERY annoying but.... A message seems to have a max size and if it exceeds that size it gets split into multiple messages
+                        // The first part of every message has the id so if json is invalid and it has an id then save to temp
+                        // If it doesnt have an id but is invalid json then this is the second part of a message so append to temp and process as normal
+                        if (requiresTemp && !string.IsNullOrWhiteSpace(id))
+                        {
+                            _logger.LogWarning("\tReceived partial JSON message: for {id}. Saving to temp....", id);
+                        }
+                        else if(requiresTemp && File.Exists(Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, BeatSaverConsts.TempSongFile)))
+                        {
+                            _logger.LogWarning("\tReceived partial JSON message with no id. Appending to temp and processing...");
+                            var temp = File.ReadAllText(Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, BeatSaverConsts.TempSongFile));
+                            message = temp + message;
+                            File.Delete(Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, BeatSaverConsts.TempSongFile));
+                        }
+
+                        // If its the first part of a message and it requires temp then just save to temp, otherwise save to normal file
+                        var fileName = requiresTemp && !string.IsNullOrWhiteSpace(id) ? Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, BeatSaverConsts.TempSongFile) : GetFileName(id);
+                        File.WriteAllText(fileName, message); // Save the message to a file
                     }
                 }
                 catch (Exception ex)
@@ -54,6 +75,19 @@ namespace BeatSaberDownloader.UpdateWatchService
                 fileName = @$"G:\BeatSaber\Updates\{id}_{fileNum++}.json";
             }
             return fileName;
+        }
+
+        static bool IsValidJson(string strInput)
+        {
+            try
+            {
+                JsonConvert.DeserializeObject(strInput);
+                return true;
+            }
+            catch // not valid
+            {
+                return false;
+            }
         }
     }
 }

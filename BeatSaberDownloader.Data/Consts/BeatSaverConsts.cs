@@ -1,4 +1,5 @@
-﻿namespace BeatSaberDownloader.Data.Consts
+﻿
+namespace BeatSaberDownloader.Data.Consts
 {
     public class BeatSaverConsts
     {
@@ -13,8 +14,9 @@
         public const string BeatSaverPlaylistsSearchURL = "playlists/latest?after={after}&automapper=true&pageSize={pagesize}";
 
         // Data
-        public const string BeatSaverDataDirectory = @"c:\BeatSaver";
-
-        
+        public const string BeatSaverDataDirectory = @"G:\BeatSaver";
+        public const string BeatSaverSongDirectory = @"G:\BeatSaver\SongFiles";
+        public const string BeatSaverSongInfoFile = "songs.json";
+        public const string TempSongFile = "temp.json";
     }
 }
