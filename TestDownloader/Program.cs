@@ -1,6 +1,5 @@
 ﻿
 using BeatSaberDownloader.Data.Models;
-using BSSD.DownloadService.Downloader;
 using Newtonsoft.Json;
 using TestDownloader;
 
@@ -10,13 +9,16 @@ internal class Program
 {
     private static async Task Main(string[] args)
     {
-        await Downlaoder.StartAsync();
-        //await DoWork();
-        //DoWork2();
+        //await Downlaoder.StartAsync();
+        DeleteSongs();
+        //await DownloadSongs();
     }
 
-    private static void DoWork2()
+    private static void DeleteSongs()
     {
+        // This grabs the songs from the list AND the files in the folder
+        // If a file exists in the folder but not in the list, it moves it to DeletedSongs
+        // If a file exists in the list but not in the folder, it logs it as missing
         var basePath = @"g:\BeatSaber\SongFiles";
         var jsonFilename = @"g:\BeatSaber\songs.json";
         var currentJsonText = File.ReadAllText(jsonFilename);
@@ -38,9 +40,10 @@ internal class Program
             }
             File.Move(@$"g:\BeatSaber\SongFiles\{x}", Path.Combine(@"g:\BeatSaber\DeletedSongs", x));
         });
+        Console.Read();
     }
 
-    private static async Task DoWork()
+    private static async Task DownloadSongs()
     {
         try
         {
@@ -50,8 +53,6 @@ internal class Program
             var songs = JsonConvert.DeserializeObject<MapDetail[]>(currentJsonText) ?? throw new NullReferenceException("Could not deserialize current song list...");
             var missingCount = 0;
             var missingSongs = new List<MapDetail>();
-            var dups = songs.DistinctBy(x => x.id).ToList();
-            File.WriteAllText(@"g:\BeatSaber\songs2.json", JsonConvert.SerializeObject(dups, Formatting.Indented));
             foreach (var song in songs.OrderByDescending(x => x.id))
             {
                 var filesNames = song.GetValidFileNames(basePath);

@@ -14,8 +14,8 @@ namespace BeatSaberDownloader.Data.Consts
         public const string BeatSaverPlaylistsSearchURL = "playlists/latest?after={after}&automapper=true&pageSize={pagesize}";
 
         // Data
-        public const string BeatSaverDataDirectory = @"G:\BeatSaver";
-        public const string BeatSaverSongDirectory = @"G:\BeatSaver\SongFiles";
+        public const string BeatSaverDataDirectory = @"G:\BeatSaber";
+        public const string BeatSaverSongDirectory = @"G:\BeatSaber\SongFiles";
         public const string BeatSaverSongInfoFile = "songs.json";
         public const string TempSongFile = "temp.json";
     }
