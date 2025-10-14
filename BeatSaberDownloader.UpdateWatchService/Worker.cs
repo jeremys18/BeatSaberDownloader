@@ -56,6 +56,7 @@ namespace BeatSaberDownloader.UpdateWatchService
                         // If its the first part of a message and it requires temp then just save to temp, otherwise save to normal file
                         var fileName = requiresTemp && !string.IsNullOrWhiteSpace(id) ? Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, BeatSaverConsts.TempSongFile) : GetFileName(id);
                         File.WriteAllText(fileName, message); // Save the message to a file
+                        _logger.LogInformation("\tSaved file {fileName}", fileName);
                     }
                 }
                 catch (Exception ex)
