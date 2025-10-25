@@ -52,6 +52,8 @@ namespace BeatSaberDownloader.UpdateWatchService
                             message = temp + message;
                             File.Delete(Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, BeatSaverConsts.TempSongFile));
                             id = Regex.Match(message, @"id"":\s*""(\w+)""").Groups[1].Value;
+                            _logger.LogInformation("\tReconstructed message for id {id}", id);
+                            requiresTemp = false; // Now we have full message
                         }
 
                         // If its the first part of a message and it requires temp then just save to temp, otherwise save to normal file
