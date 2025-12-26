@@ -1,6 +1,5 @@
 ﻿
 using BeatSaberDownloader.Data.Enums;
-using System.ComponentModel;
 
 namespace BeatSaberDownloader.Data.Models
 {

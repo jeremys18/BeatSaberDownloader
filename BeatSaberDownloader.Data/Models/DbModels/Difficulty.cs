@@ -9,12 +9,11 @@ namespace BeatSaberDownloader.Data.Models.DbModels
         public int Id { get; set; }
         public float BlStars { get; set; }
         public int Bombs { get; set; }
-        //public Characteristic characteristic { get; set; } change back to enum once we know all the current values and how to prase them as the docs dont match the real values sent back to us. This sucks
-        public string Characteristic { get; set; } // Temporary workaround for the issue mentioned above
         public bool Chroma { get; set; }
         public bool Cinema { get; set; }
-        public Enums.Difficulty Difficulty { get; set; }
-        public Enums.Environment environment { get; set; }
+        public int CharacteristicId { get; set; }
+        public int DifficultyId { get; set; }
+        public int EnvironmentId { get; set; }
         public int Events { get; set; }
         public string Label { get; set; }
         public double Length { get; set; }
@@ -26,9 +25,14 @@ namespace BeatSaberDownloader.Data.Models.DbModels
         public double NPS { get; set; }
         public int Obstacles { get; set; }
         public float Offset { get; set; }
-        public MapParitySummary ParitySummary { get; set; }
+        public int ParitySummaryId { get; set; }
         public double Seconds { get; set; }
         public float Stars { get; set; }
         public bool Vivify { get; set; }
+
+        public virtual Characteristic Characteristic { get; set; }
+        public virtual Difficulty2 Difficulty2 { get; set; }
+        public virtual Environment Environment { get; set; }
+        public ParitySummary ParitySummary { get; set; }
     }
 }

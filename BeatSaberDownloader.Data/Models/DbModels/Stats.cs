@@ -1,11 +1,10 @@
 ﻿
-using BeatSaberDownloader.Data.Enums;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BeatSaberDownloader.Data.Models.DbModels
 {
     [Table("Stats", Schema = "BeatSaver")]
-    internal class Stats
+    public class Stats
     {
         public int Id { get; set; }
         public int Downloads { get; set; }

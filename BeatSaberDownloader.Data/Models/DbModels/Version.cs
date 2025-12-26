@@ -1,6 +1,4 @@
-﻿
-using BeatSaberDownloader.Data.Enums;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BeatSaberDownloader.Data.Models.DbModels
 {

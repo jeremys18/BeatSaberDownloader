@@ -1,6 +1,6 @@
 ﻿
 
-using BeatSaberDownloader.Data.Enums;
+using BSSD.DownloadService.Converters;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -20,7 +20,7 @@ namespace BeatSaberDownloader.Data.Models.DbModels
             public bool BlRanked { get; set; }
             public bool Bookmarked { get; set; }
             public DateTime CreatedAt { get; set; }
-            public DeclaredAI DeclaredAi { get; set; }
+            public int DeclaredAiId { get; set; }
             public string Description { get; set; }
             public DateTime LastPublishedAt { get; set; }
             public int MetadataId { get; set; }
@@ -28,18 +28,18 @@ namespace BeatSaberDownloader.Data.Models.DbModels
             public bool Qualified { get; set; }
             public bool Ranked { get; set; }
             public int StatsId{ get; set; }
-            //[JsonConverter(typeof(TagsConverter))]
-            //public Tag[] tags { get; set; } // Change this back later once we know the real tags since the tags in swagger dont match
-            public string[] Tags { get; set; }
             public DateTime UpdatedAt { get; set; }
             public DateTime Uploaded { get; set; }
             public int UploaderId { get; set; }
 
 
-            public virtual MapDetailMetadata Metadata { get; set; }
-            public virtual MapStats Stats { get; set; }
-            public virtual UserDetail Uploader { get; set; }
-            public virtual IEnumerable<MapVersion> Versions { get; set; }
+            public virtual DeclaredAI DeclaredAi { get; set; }
+            public virtual MetaData Metadata { get; set; }
+            public virtual Stats Stats { get; set; }
+            //[JsonConverter(typeof(TagsConverter))]
+            public virtual IEnumerable<Tag> Tags { get; set; }
+            public virtual User Uploader { get; set; }
+            public virtual IEnumerable<Version> Versions { get; set; }
 
             // These are not in the data but are in the swagger documentation
 

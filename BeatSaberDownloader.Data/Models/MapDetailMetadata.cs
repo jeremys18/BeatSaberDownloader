@@ -4,7 +4,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BeatSaberDownloader.Data.Models
 {
-    [Table("MetaData", Schema = "BeatSaver")]
     public class MapDetailMetadata
     {
         public float bpm { get; set; }

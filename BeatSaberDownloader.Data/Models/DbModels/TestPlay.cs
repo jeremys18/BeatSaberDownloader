@@ -1,6 +1,9 @@
 ﻿
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace BeatSaberDownloader.Data.Models.DbModels
 {
+    [Table("TestPlay", Schema = "BeatSaver")]
     public class TestPlay
     {
         public int Id { get; set; }
@@ -12,6 +15,5 @@ namespace BeatSaberDownloader.Data.Models.DbModels
         public int VersionId { get; set; }
 
         public virtual User User { get; set; }
-        public virtual Version Version { get; set; }
     }
 }
