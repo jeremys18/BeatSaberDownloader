@@ -74,12 +74,14 @@ app.Use(async (context, next) =>
         clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     }
 
+    logger.LogInformation("Request {Method} {Path} from {ClientIP}...", context.Request.Method, path, clientIp);
+
     var sw = Stopwatch.StartNew();
     await next();
     sw.Stop();
 
     var statusCode = context.Response?.StatusCode ?? 0;
-    logger.LogInformation("Request {Method} {Path} from {ClientIP} responded {StatusCode} in {ElapsedMs}ms", context.Request.Method, path, clientIp, statusCode, sw.ElapsedMilliseconds);
+    logger.LogInformation("Responded {StatusCode} in {ElapsedMs}ms.", statusCode, sw.ElapsedMilliseconds);
 });
 
 app.Urls.Clear();

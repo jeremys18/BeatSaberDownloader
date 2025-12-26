@@ -7,6 +7,13 @@ namespace BeatSaberDownloader.Server.Services.MediaR.Queries.GetSong
 {
     public class GetSongQueryHandler : IRequestHandler<GetSongQuery, byte[]?>
     {
+        private readonly ILogger<GetSongQueryHandler> _logger;
+
+        public GetSongQueryHandler(ILogger<GetSongQueryHandler> logger)
+        {
+            _logger = logger;
+        }
+
         public async Task<byte[]?> Handle(GetSongQuery query, CancellationToken cancellationToken)
         {
             byte[]? result;
@@ -24,6 +31,7 @@ namespace BeatSaberDownloader.Server.Services.MediaR.Queries.GetSong
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Failed to retrieve song {SongId} version {VersionHash}", query.SongId, query.VersionHash);
                 result = null;
             }
 
