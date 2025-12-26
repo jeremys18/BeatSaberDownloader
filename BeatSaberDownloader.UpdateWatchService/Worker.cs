@@ -51,11 +51,15 @@ namespace BeatSaberDownloader.UpdateWatchService
                             var temp = File.ReadAllText(Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, BeatSaverConsts.TempSongFile));
                             message = temp + message;
                             File.Delete(Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, BeatSaverConsts.TempSongFile));
+                            id = Regex.Match(message, @"id"":\s*""(\w+)""").Groups[1].Value;
+                            _logger.LogInformation("\tReconstructed message for id {id}", id);
+                            requiresTemp = false; // Now we have full message
                         }
 
                         // If its the first part of a message and it requires temp then just save to temp, otherwise save to normal file
                         var fileName = requiresTemp && !string.IsNullOrWhiteSpace(id) ? Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, BeatSaverConsts.TempSongFile) : GetFileName(id);
                         File.WriteAllText(fileName, message); // Save the message to a file
+                        _logger.LogInformation("\tSaved file {fileName}", fileName);
                     }
                 }
                 catch (Exception ex)

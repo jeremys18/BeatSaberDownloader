@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Models\DbModels\" />
+    <Folder Include="Models\BeatSaver\" />
     <Folder Include="Models\ViewModels\" />
   </ItemGroup>
 

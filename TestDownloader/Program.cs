@@ -9,9 +9,9 @@ internal class Program
 {
     private static async Task Main(string[] args)
     {
-        //await Downlaoder.StartAsync();
-        DeleteSongs();
-        //await DownloadSongs();
+        //await Downlaoder.StartAsync(); // Downloads song info and saves to songs.json
+        // DeleteSongs();
+        await DownloadSongs();
     }
 
     private static void DeleteSongs()
