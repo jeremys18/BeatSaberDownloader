@@ -2,7 +2,6 @@ using BeatSaberDownloader.Data.Consts;
 using Newtonsoft.Json;
 using System.Net.WebSockets;
 using System.Text;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace BeatSaberDownloader.UpdateWatchService
@@ -40,20 +39,27 @@ namespace BeatSaberDownloader.UpdateWatchService
 
                         // This is VERY annoying but.... A message seems to have a max size and if it exceeds that size it gets split into multiple messages
                         // The first part of every message has the id so if json is invalid and it has an id then save to temp
-                        // If it doesnt have an id but is invalid json then this is the second part of a message so append to temp and process as normal
+                        // If it doesnt have an id but is invalid json then this is the another part of a previous message so append to temp and try to reconstruct. This may take multiple appends...
                         if (requiresTemp && !string.IsNullOrWhiteSpace(id))
                         {
-                            _logger.LogWarning("\tReceived partial JSON message: for {id}. Saving to temp....", id);
+                            _logger.LogWarning("\tReceived partial JSON message: for {id}. Appending to temp....", id);
                         }
                         else if(requiresTemp && File.Exists(Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, BeatSaverConsts.TempSongFile)))
                         {
-                            _logger.LogWarning("\tReceived partial JSON message with no id. Appending to temp and processing...");
+                            _logger.LogWarning("\tReceived partial JSON message with no id. Appending to temp and attempting to process...");
                             var temp = File.ReadAllText(Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, BeatSaverConsts.TempSongFile));
                             message = temp + message;
-                            File.Delete(Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, BeatSaverConsts.TempSongFile));
-                            id = Regex.Match(message, @"id"":\s*""(\w+)""").Groups[1].Value;
-                            _logger.LogInformation("\tReconstructed message for id {id}", id);
-                            requiresTemp = false; // Now we have full message
+                            if(!IsValidJson(message))
+                            {
+                                _logger.LogWarning("\tReconstructed message is still invalid JSON. Saving to temp and waiting for more data...");
+                            }
+                            else
+                            {
+                                _logger.LogInformation("\tSuccessfully reconstructed JSON message from temp.");
+                                File.Delete(Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, BeatSaverConsts.TempSongFile));
+                                id = Regex.Match(message, @"id"":\s*""(\w+)""").Groups[1].Value;
+                                requiresTemp = false; // Now we have full message
+                            }
                         }
 
                         // If its the first part of a message and it requires temp then just save to temp, otherwise save to normal file
