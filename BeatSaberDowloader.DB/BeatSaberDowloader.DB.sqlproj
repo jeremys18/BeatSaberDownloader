@@ -56,5 +56,38 @@
   <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
   <ItemGroup>
     <Folder Include="Properties" />
+    <Folder Include="Tables" />
+    <Folder Include="Schemas" />
+    <Folder Include="Scripts" />
+    <Folder Include="Scripts\Tables" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="BeatSaver.DB.Local.publish.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Scripts\Script.PostDeployment.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <Build Include="Schemas\BeatSaver.sql" />
+    <Build Include="Tables\Characteristic.sql" />
+    <Build Include="Tables\DeclaredAI.sql" />
+    <Build Include="Tables\Difficulty.sql" />
+    <Build Include="Tables\Difficulty2.sql" />
+    <Build Include="Tables\Environment.sql" />
+    <Build Include="Tables\MetaData.sql" />
+    <Build Include="Tables\ParitySummary.sql" />
+    <Build Include="Tables\Sentiment.sql" />
+    <Build Include="Tables\Song.sql" />
+    <Build Include="Tables\SongTag.sql" />
+    <Build Include="Tables\State.sql" />
+    <Build Include="Tables\Stats.sql" />
+    <Build Include="Tables\Tag.sql" />
+    <Build Include="Tables\TestPlay.sql" />
+    <Build Include="Tables\User.sql" />
+    <Build Include="Tables\UserType.sql" />
+    <Build Include="Tables\Version.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <RefactorLog Include="BeatSaberDowloader.DB.refactorlog" />
   </ItemGroup>
 </Project>
