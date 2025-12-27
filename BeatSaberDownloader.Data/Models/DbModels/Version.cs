@@ -17,6 +17,7 @@ namespace BeatSaberDownloader.Data.Models.DbModels
         public DateTime ScheduledAt { get; set; }
         public int StateId { get; set; }
         public DateTime TestplayAt { get; set; }
+        public int SongId { get; set; }
 
         public virtual State State { get; set; }
         public virtual IEnumerable<TestPlay> TestPlays { get; set; }

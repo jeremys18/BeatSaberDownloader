@@ -6,7 +6,7 @@ namespace BeatSaberDownloader.Data.Models.DbModels
     [Table("Tag", Schema = "BeatSaver")]
     public class Tag
     {
-        public int TagId { get; set; }
+        public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
     }
 }

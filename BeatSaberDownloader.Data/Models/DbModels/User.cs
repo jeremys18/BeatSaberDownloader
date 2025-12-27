@@ -20,5 +20,6 @@ namespace BeatSaberDownloader.Data.Models.DbModels
         public int UserTypeId { get; set; }
         
         public virtual UserType UserType { get; set; }
+        public virtual IEnumerable<Song> Songs { get; set; }
     }
 }

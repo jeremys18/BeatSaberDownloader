@@ -29,6 +29,7 @@ namespace BeatSaberDownloader.Data.Models.DbModels
         public double Seconds { get; set; }
         public float Stars { get; set; }
         public bool Vivify { get; set; }
+        public int VersionId { get; set; }
 
         public virtual Characteristic Characteristic { get; set; }
         public virtual Difficulty2 Difficulty2 { get; set; }
