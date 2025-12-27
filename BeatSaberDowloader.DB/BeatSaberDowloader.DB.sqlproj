@@ -63,9 +63,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="BeatSaver.DB.Local.publish.xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Scripts\Script.PostDeployment.sql" />
+    <None Include="Scripts\Tables\UserType.sql" />
+    <None Include="Scripts\Tables\State.sql" />
+    <None Include="Scripts\Tables\Sentiment.sql" />
+    <None Include="Scripts\Tables\Environment.sql" />
+    <None Include="Scripts\Tables\Difficulty.sql" />
+    <None Include="Scripts\Tables\DeclaredAI.sql" />
+    <None Include="Scripts\Tables\Characteristic.sql" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="Schemas\BeatSaver.sql" />
@@ -89,5 +93,8 @@
   </ItemGroup>
   <ItemGroup>
     <RefactorLog Include="BeatSaberDowloader.DB.refactorlog" />
+  </ItemGroup>
+  <ItemGroup>
+    <PostDeploy Include="Script.PostDeployment.sql" />
   </ItemGroup>
 </Project>

@@ -10,3 +10,10 @@ Post-Deployment Script Template
 --------------------------------------------------------------------------------------
 */
 
+:r .\Scripts\Tables\Characteristic.sql
+:r .\Scripts\Tables\DeclaredAI.sql
+:r .\Scripts\Tables\Difficulty.sql
+:r .\Scripts\Tables\Environment.sql
+:r .\Scripts\Tables\Sentiment.sql
+:r .\Scripts\Tables\State.sql
+:r .\Scripts\Tables\UserType.sql
