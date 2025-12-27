@@ -3,6 +3,7 @@
 	[Id] INT NOT NULL PRIMARY KEY identity, 
     [CoverURL] VARCHAR(100) NOT NULL, 
     [CreatedAt] DATETIME NOT NULL, 
+    [DeletedAt] DATETIME NULL, 
     [DownloadURL] VARCHAR(100) NOT NULL, 
     [Feedback] NVARCHAR(MAX) NOT NULL, 
     [Hash] VARCHAR(50) NOT NULL, 

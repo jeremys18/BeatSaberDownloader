@@ -7,6 +7,7 @@
     [BlRanked] BIT NOT NULL, 
     [Bookmarked] BIT NOT NULL, 
     [CreatedAt] DATETIME NOT NULL, 
+    [DeletedAt] DATETIME NULL, 
     [DeclaredAiId] INT NOT NULL, 
     [Description] NVARCHAR(MAX) NOT NULL, 
     [LastPublishedAt] DATETIME NOT NULL, 
