@@ -3,10 +3,10 @@ namespace BeatSaberDownloader.Data.Enums
 {
     public enum State
     {
-        Uploaded, 
-        Testplay, 
-        Published, 
-        Feedback, 
-        Scheduled
+        Uploaded = 1, 
+        Testplay = 2, 
+        Published = 3, 
+        Feedback = 4, 
+        Scheduled = 5
     }
 }

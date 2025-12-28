@@ -24,5 +24,11 @@ namespace BeatSaberDownloader.Data.DBContext
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<UserType> UserTypes { get; set; } = null!;
         public DbSet<Version> Versions { get; set; } = null!;
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            // Configure the database connection string here
+            optionsBuilder.UseSqlServer("Server=.;Database=BeatSaver;Trusted_Connection=True;TrustServerCertificate=True;");
+        }
     }
 }

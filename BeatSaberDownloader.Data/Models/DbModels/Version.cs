@@ -10,7 +10,7 @@ namespace BeatSaberDownloader.Data.Models.DbModels
         public DateTime CreatedAt { get; set; }
         public DateTime? DeletedAt { get; set; }
         public string DownloadURL { get; set; }
-        public string Feedback { get; set; }
+        public string? Feedback { get; set; }
         public string Hash { get; set; }
         public string Key { get; set; }
         public string PreviewURL { get; set; }

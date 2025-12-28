@@ -3,10 +3,10 @@
 	[UserId] INT NOT NULL PRIMARY KEY identity, 
     [Id] INT NOT NULL, 
     [Admin] BIT NOT NULL, 
-    [Avatar] NVARCHAR(50) NOT NULL, 
+    [Avatar] NVARCHAR(200) NOT NULL, 
     [Curator] BIT NOT NULL, 
-    [Name] NVARCHAR(50) NOT NULL, 
-    [PlaylistUrl] VARCHAR(100) NOT NULL, 
+    [Name] NVARCHAR(100) NOT NULL, 
+    [PlaylistUrl] VARCHAR(200) NOT NULL, 
     [SeniorCurator] BIT NOT NULL, 
     [UserTypeId] INT NOT NULL,
 

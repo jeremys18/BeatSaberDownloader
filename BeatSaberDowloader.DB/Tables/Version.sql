@@ -1,13 +1,13 @@
 ﻿CREATE TABLE [BeatSaver].[Version]
 (
 	[Id] INT NOT NULL PRIMARY KEY identity, 
-    [CoverURL] VARCHAR(100) NOT NULL, 
+    [CoverURL] VARCHAR(200) NOT NULL, 
     [CreatedAt] DATETIME NOT NULL, 
     [DeletedAt] DATETIME NULL, 
-    [DownloadURL] VARCHAR(100) NOT NULL, 
-    [Feedback] NVARCHAR(MAX) NOT NULL, 
-    [Hash] VARCHAR(50) NOT NULL, 
-    [Key] VARCHAR(50) NOT NULL, 
+    [DownloadURL] VARCHAR(200) NOT NULL, 
+    [Feedback] NVARCHAR(MAX) NULL, 
+    [Hash] VARCHAR(100) NOT NULL, 
+    [Key] VARCHAR(100) NOT NULL, 
     [PreviewURL] VARCHAR(100) NOT NULL, 
     [SageScore] SMALLINT NOT NULL, 
     [ScheduledAt] DATETIME NOT NULL, 

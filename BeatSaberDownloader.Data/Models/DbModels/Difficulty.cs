@@ -12,7 +12,7 @@ namespace BeatSaberDownloader.Data.Models.DbModels
         public bool Chroma { get; set; }
         public bool Cinema { get; set; }
         public int CharacteristicId { get; set; }
-        public int DifficultyId { get; set; }
+        public int Difficulty2Id { get; set; }
         public int EnvironmentId { get; set; }
         public int Events { get; set; }
         public string Label { get; set; }

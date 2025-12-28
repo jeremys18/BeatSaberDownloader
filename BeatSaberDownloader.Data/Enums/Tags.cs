@@ -3,7 +3,7 @@ namespace BeatSaberDownloader.Data.Enums
 {
     public enum Tag
     {
-        None, 
+        None = 1, 
         Tech, 
         DanceStyle, 
         Speed, 

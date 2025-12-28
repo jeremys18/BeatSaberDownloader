@@ -4,13 +4,13 @@ namespace BeatSaberDownloader.Data.Enums
 {
     public enum Characteristic
     {
-        Standard, 
-        OneSaber, 
-        NoArrows, 
-        Rotation90Degree, 
-        Rotation360Degree,
-        Lightshow, 
-        Lawless, 
-        Legacy
+        Standard = 1, 
+        OneSaber = 2, 
+        NoArrows = 3, 
+        Rotation90Degree = 4, 
+        Rotation360Degree = 5,
+        Lightshow = 6, 
+        Lawless = 7, 
+        Legacy = 8
     }
 }
