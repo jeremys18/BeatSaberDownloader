@@ -1,7 +1,7 @@
 ﻿CREATE TABLE [BeatSaver].[User]
 (
-	[UserId] INT NOT NULL PRIMARY KEY identity, 
-    [Id] INT NOT NULL, 
+	[Id] INT NOT NULL PRIMARY KEY identity, 
+    [ExternalId] INT NOT NULL, 
     [Admin] BIT NOT NULL, 
     [Avatar] NVARCHAR(200) NOT NULL, 
     [Curator] BIT NOT NULL, 

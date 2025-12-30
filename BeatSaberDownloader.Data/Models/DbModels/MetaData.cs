@@ -12,6 +12,6 @@ namespace BeatSaberDownloader.Data.Models.DbModels
         public string LevelAuthorName { get; set; }
         public string SongAuthorName { get; set; }
         public string SongName { get; set; }
-        public string SongSubName { get; set; }
+        public string? SongSubName { get; set; }
     }
 }

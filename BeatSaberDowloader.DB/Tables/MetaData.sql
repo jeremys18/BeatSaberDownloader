@@ -3,8 +3,8 @@
 	[Id] INT NOT NULL PRIMARY KEY identity, 
     [BPM] DECIMAL(18, 8) NOT NULL, 
     [Duration] INT NOT NULL, 
-    [LevelAuthorName] NVARCHAR(MAX) NOT NULL, 
-    [SongAuthorName] NVARCHAR(MAX) NOT NULL, 
-    [SongName] NVARCHAR(MAX) NOT NULL, 
-    [SongSubName] NVARCHAR(MAX) NOT NULL
+    [LevelAuthorName] NVARCHAR(1000) NOT NULL, 
+    [SongAuthorName] NVARCHAR(1000) NOT NULL, 
+    [SongName] NVARCHAR(300) NOT NULL, 
+    [SongSubName] NVARCHAR(max) NULL
 )

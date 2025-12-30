@@ -11,7 +11,9 @@ using( values
 	(5, 'Rotation360Degree'),
 	(6, 'Lightshow'),
 	(7, 'Lawless'),
-	(8, 'Legacy')
+	(8, 'Legacy'),
+	(9, '360Degree'),
+	(10, '90Degree')
 ) as src(Id, Name)
 on tgt.Id = src.Id
 when matched then

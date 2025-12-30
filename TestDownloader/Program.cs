@@ -1,7 +1,9 @@
-﻿
-using BeatSaberDownloader.Data.Enums;
+﻿using BeatSaberDownloader.Data.Enums;
 using BeatSaberDownloader.Data.Models;
+using BeatSaberDownloader.Data.Models.BareModels;
 using BeatSaberDownloader.Data.Models.DbModels;
+using EFCore.BulkExtensions;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using TestDownloader;
 using Version = BeatSaberDownloader.Data.Models.DbModels.Version;
@@ -124,24 +126,51 @@ internal class Program
         var jsonFilename = @"C:\Users\grabb\Desktop\New Lappy\songs.json";
         var currentJsonText = File.ReadAllText(jsonFilename);
         var songs = JsonConvert.DeserializeObject<MapDetail[]>(currentJsonText) ?? throw new NullReferenceException("Could not deserialize current song list...");
-        foreach (var song in songs)
+        var uploaders = songs.Select(s => s.uploader).DistinctBy(u => u.id).Select(x => new User
         {
-            var uploader = context.Users.FirstOrDefault(x => x.Id == song.uploader.id) ?? new User
-            {
-                Id = song.uploader.id,
-                Name = song.uploader.name,
-                Admin = song.uploader.admin,
-                Avatar = song.uploader.avatar,
-                Curator = song.uploader.curator,
-                PlaylistUrl = song.uploader.playlistUrl,
-                SeniorCurator = song.uploader.seniorCurator,
-                UserTypeId = (int)song.uploader.type,
-            };
+            ExternalId = x.id,
+            Name = x.name,
+            Admin = x.admin,
+            Avatar = x.avatar,
+            Curator = x.curator,
+            PlaylistUrl = x.playlistUrl,
+            SeniorCurator = x.seniorCurator,
+            UserTypeId = (int)x.type,
+        }).ToList();
+        var newTags = songs.SelectMany(s => s?.tags ?? []).Distinct().Select(t => new BeatSaberDownloader.Data.Models.DbModels.Tag { Name = t }).ToList();
+        var md = songs.Select(x => new MetaData
+        {
+            BPM = x.metadata.bpm,
+            Duration = x.metadata.duration,
+            SongAuthorName = x.metadata.songAuthorName,
+            LevelAuthorName = x.metadata.levelAuthorName,
+            SongName = x.metadata.songName,
+            SongSubName = x.metadata.songSubName == string.Empty ? null : x.metadata.songSubName,
+        }).ToList();
+        var stats = songs.Select(x => new Stats
+        {
+            Downloads = x.stats.downloads,
+            Plays = x.stats.plays,
+            Downvotes = x.stats.downvotes,
+            Upvotes = x.stats.upvotes,
+            Reviews = x.stats.reviews,
+            Score = x.stats.score,
+            ScoreOneDP = x.stats.scoreOneDP,
+            SentimentId = ((int)x.stats.sentiment) == 0 ? 1 : (int)x.stats.sentiment
+        }).ToList();
 
-            var tags = song.tags?.Select(t => context.Tags.FirstOrDefault(tag => tag.Name == t) ?? new BeatSaberDownloader.Data.Models.DbModels.Tag { Name = t })?.ToList() ?? new List<BeatSaberDownloader.Data.Models.DbModels.Tag>();
+        //var ff = md.First(x => x.SongSubName?.Contains("AaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") ?? false);
+        context.Users.AddRange(uploaders);
+        context.Tags.AddRange(newTags);
+        context.MetaDatas.AddRange(md);
+        context.Stats.AddRange(stats);
+        context.SaveChanges();
 
-            // Map MapDetail to Song entity and add to context
-            var songEntity = new Song
+        var dbSongs = new List<BeatSaberDownloader.Data.Models.DbModels.Song>();
+        for (int i = 0; i < songs.Count(); i++)
+        {
+            var song = songs[i];
+            dbSongs.Add(new BeatSaberDownloader.Data.Models.DbModels.Song
             {
                 Id = song.id,
                 Automapper = song.automapper,
@@ -157,99 +186,79 @@ internal class Program
                 Ranked = song.ranked,
                 UpdatedAt = song.updatedAt,
                 Uploaded = song.uploaded,
-                UploaderId = uploader.UserId,
+                MetadataId = md[i].Id,
+                StatsId = stats[i].Id,
+                UploaderId = uploaders.First(x => x.ExternalId == song.uploader.id).Id,
+                //Tags = newTags.Where(x => song.tags.Contains(x.Name)).ToList(),
+                //Versions = song.versions.Select(v => new Version
+                //{
+                //    Hash = v.hash,
+                //    DownloadURL = v.downloadURL,
+                //    CreatedAt = v.createdAt,
+                //    StateId = (int)v.state,
+                //    CoverURL = v.coverURL,
+                //    Feedback = v.feedback,
+                //    Key = v.key,
+                //    PreviewURL = v.previewURL,
+                //    SageScore = v.sageScore,
+                //    ScheduledAt = v.scheduledAt.Year < 2015 ? null : v.scheduledAt,
+                //    TestplayAt = v.testplayAt.Year < 2015 ? null : v.testplayAt,
+                //    Difficulties = v.diffs.Select(d => new BeatSaberDownloader.Data.Models.DbModels.Difficulty
+                //    {
+                //        CharacteristicId = char.IsDigit(d.characteristic[0]) ? (int)Enum.Parse<BeatSaberDownloader.Data.Enums.Characteristic>($"_{d.characteristic}") : (int)Enum.Parse<BeatSaberDownloader.Data.Enums.Characteristic>(d.characteristic),
+                //        NJS = d.njs,
+                //        Notes = d.notes,
+                //        Obstacles = d.obstacles,
+                //        Bombs = d.bombs,
+                //        Stars = d.stars,
+                //        BlStars = d.blStars,
+                //        Length = d.length,
+                //        NPS = d.nps,
+                //        MaxScore = d.maxScore,
+                //        Label = d.label,
+                //        Difficulty2Id = (int)d.difficulty,
+                //        EnvironmentId = (int)d.environment,
+                //        Chroma = d.chroma,
+                //        Cinema = d.cinema,
+                //        ME = d.me,
+                //        NE = d.ne,
+                //        Vivify = d.vivify,
+                //        Events = d.events,
+                //        Offset = d.offset,
+                //        Seconds = d.seconds,
+                //        ParitySummary = new ParitySummary
+                //        {
+                //            Errors = d.paritySummary.errors,
+                //            Resets = d.paritySummary.resets,
+                //            Warns = d.paritySummary.warns
+                //        }
 
-                Metadata = new MetaData
-                {
-                    BPM = song.metadata.bpm,
-                    Duration = song.metadata.duration,
-                    SongAuthorName = song.metadata.songAuthorName,
-                    LevelAuthorName = song.metadata.levelAuthorName,
-                    SongName = song.metadata.songName,
-                    SongSubName = song.metadata.songSubName,
-                },
-                Stats = new Stats
-                {
-                    Downloads = song.stats.downloads,
-                    Plays = song.stats.plays,
-                    Downvotes = song.stats.downvotes,
-                    Reviews = song.stats.reviews,
-                    Score = song.stats.score,
-                    ScoreOneDP = song.stats.scoreOneDP,
-                    Upvotes = song.stats.upvotes,
-                    SentimentId = ((int)song.stats.sentiment) == 0 ? 1 : (int)song.stats.sentiment
-                },
-                Uploader = uploader,
-                Tags = tags,
-                Versions = song.versions.Select(v => new Version
-                {
-                    Hash = v.hash,
-                    DownloadURL = v.downloadURL,
-                    CreatedAt = v.createdAt,
-                    StateId = (int)v.state,
-                    CoverURL = v.coverURL,
-                    Feedback = v.feedback,
-                    Key = v.key,
-                    PreviewURL = v.previewURL,
-                    SageScore = v.sageScore,
-                    ScheduledAt = v.scheduledAt,
-                    TestplayAt = v.testplayAt,
-                    Difficulties = v.diffs.Select(d => new BeatSaberDownloader.Data.Models.DbModels.Difficulty
-                    {
-                        CharacteristicId = (int)Enum.Parse<BeatSaberDownloader.Data.Enums.Characteristic>(d.characteristic),
-                        NJS = d.njs,
-                        Notes = d.notes,
-                        Obstacles = d.obstacles,
-                        Bombs = d.bombs,
-                        Stars = d.stars,
-                        BlStars = d.blStars,
-                        Length = d.length,
-                        NPS = d.nps,
-                        MaxScore = d.maxScore,
-                        Label = d.label,
-                        Difficulty2Id = (int)d.difficulty,
-                        EnvironmentId = (int)d.environment,
-                        Chroma = d.chroma,
-                        Cinema = d.cinema,
-                        ME = d.me,
-                        NE = d.ne,
-                        Vivify = d.vivify,
-                        Events = d.events,
-                        Offset = d.offset,
-                        Seconds = d.seconds,
-                        ParitySummary = new ParitySummary
-                        {
-                            Errors = d.paritySummary.errors,
-                            Resets = d.paritySummary.resets,
-                            Warns = d.paritySummary.warns
-                        }
-
-                    }).ToList(),
-                    TestPlays = v.testplays?.Select(tp => new TestPlay
-                    {
-                        CreatedAt = tp.createdAt,
-                        Feedback = tp.feedback,
-                        FeedbackAt = tp.feedbackAt,
-                        User = context.Users.FirstOrDefault(u => u.Id == tp.user.id) ?? new User
-                        {
-                            Id = tp.user.id,
-                            Name = tp.user.name,
-                            Admin = tp.user.admin,
-                            Avatar = tp.user.avatar,
-                            Curator = tp.user.curator,
-                            PlaylistUrl = tp.user.playlistUrl,
-                            SeniorCurator = tp.user.seniorCurator,
-                            UserTypeId = (int)tp.user.type
-                        },
-                        Video = tp.video,
-                    }).ToList() ?? new List<TestPlay>()
-                }).ToList()
-            };
-
-            context.Songs.Add(songEntity);
-            context.SaveChanges();
+                //    }).ToList(),
+                //    TestPlays = v.testplays?.Select(tp => new TestPlay
+                //    {
+                //        CreatedAt = tp.createdAt,
+                //        Feedback = tp.feedback,
+                //        FeedbackAt = tp.feedbackAt,
+                //        UserId = uploaders.First(u => u.ExternalId == tp.user.id).Id,
+                //        Video = tp.video,
+                //    }).ToList() ?? new List<TestPlay>()
+                //}).ToList()
+            });
         }
-        
+
+        context.Songs.AddRange(dbSongs);
+        context.SaveChanges();
+
+        var songTags = songs.Where(aa => aa.tags != null).Select(x => x.tags?.Select(y => new { x.id, y })).SelectMany(z => z).Select( a => new SongTag
+        {
+            SongId = dbSongs.First(s => s.Id == a.id).SongId,
+            TagId = newTags.First(t => t.Name == a.y).Id
+        }).ToList();
+
+
+
+        context.SongTags.AddRange(songTags);
+        context.SaveChanges();
         Console.WriteLine("Database populated.");
     }
 }

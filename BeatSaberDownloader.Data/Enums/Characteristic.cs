@@ -11,6 +11,8 @@ namespace BeatSaberDownloader.Data.Enums
         Rotation360Degree = 5,
         Lightshow = 6, 
         Lawless = 7, 
-        Legacy = 8
+        Legacy = 8,
+        _360Degree = 9,
+        _90Degree = 10
     }
 }

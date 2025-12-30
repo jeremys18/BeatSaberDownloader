@@ -1,6 +1,4 @@
-﻿
-
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -33,13 +31,12 @@ namespace BeatSaberDownloader.Data.Models.DbModels
         public int UploaderId { get; set; }
 
 
-        public virtual DeclaredAI DeclaredAi { get; set; }
-        public virtual MetaData Metadata { get; set; }
-        public virtual Stats Stats { get; set; }
-        //[JsonConverter(typeof(TagsConverter))]
-        public virtual IEnumerable<Tag> Tags { get; set; }
-        public virtual User Uploader { get; set; }
-        public virtual IEnumerable<Version> Versions { get; set; }
+        public virtual DeclaredAI? DeclaredAi { get; set; }
+        public virtual MetaData? Metadata { get; set; }
+        public virtual Stats? Stats { get; set; }
+        public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
+        public virtual User? Uploader { get; set; }
+        public virtual ICollection<Version> Versions { get; set; } = new List<Version>();
 
         // These are not in the data but are in the swagger documentation
 
