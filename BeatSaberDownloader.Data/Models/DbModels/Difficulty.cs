@@ -7,7 +7,7 @@ namespace BeatSaberDownloader.Data.Models.DbModels
     public class Difficulty
     {
         public int Id { get; set; }
-        public double BlStars { get; set; }
+        public decimal BlStars { get; set; }
         public int Bombs { get; set; }
         public bool Chroma { get; set; }
         public bool Cinema { get; set; }
@@ -16,18 +16,18 @@ namespace BeatSaberDownloader.Data.Models.DbModels
         public int EnvironmentId { get; set; }
         public int Events { get; set; }
         public string? Label { get; set; }
-        public double Length { get; set; }
+        public decimal Length { get; set; }
         public int MaxScore { get; set; }
         public bool ME { get; set; }
         public bool NE { get; set; }
-        public double NJS { get; set; }
+        public float NJS { get; set; }
         public int Notes { get; set; }
-        public double NPS { get; set; }
+        public decimal NPS { get; set; }
         public int Obstacles { get; set; }
-        public double Offset { get; set; }
+        public float Offset { get; set; }
         public int ParitySummaryId { get; set; }
-        public double Seconds { get; set; }
-        public double Stars { get; set; }
+        public decimal Seconds { get; set; }
+        public decimal Stars { get; set; }
         public bool Vivify { get; set; }
         public int VersionId { get; set; }
 

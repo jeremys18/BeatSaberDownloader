@@ -1,7 +1,7 @@
 ﻿CREATE TABLE [BeatSaver].[Difficulty]
 (
 	[Id] INT NOT NULL PRIMARY KEY identity, 
-    [BlStars] DECIMAL(18, 8) NOT NULL, 
+    [BlStars] DECIMAL(18, 10) NOT NULL, 
     [Bombs] INT NOT NULL, 
     [Chroma] BIT NOT NULL, 
     [Cinema] BIT NOT NULL, 
@@ -10,18 +10,18 @@
     [EnvironmentId] INT NOT NULL, 
     [Events] INT NOT NULL, 
     [Label] NVARCHAR(300) NULL, 
-    [Length] DECIMAL(18, 8) NOT NULL, 
+    [Length] DECIMAL(18, 10) NOT NULL, 
     [MaxScore] INT NOT NULL, 
     [ME] BIT NOT NULL, 
     [NE] BIT NOT NULL, 
-    [NJS] DECIMAL(18, 10) NOT NULL, 
+    [NJS] REAL NOT NULL, 
     [Notes] INT NOT NULL, 
-    [NPS] DECIMAL(18, 8) NOT NULL, 
+    [NPS] DECIMAL(18, 10) NOT NULL, 
     [Obstacles] INT NOT NULL, 
-    [Offset] DECIMAL(18, 8) NOT NULL, 
+    [Offset] REAL NOT NULL, 
     [ParitySummaryId] INT NOT NULL, 
-    [Seconds] DECIMAL(18, 8) NOT NULL, 
-    [Stars] DECIMAL(18, 8) NOT NULL, 
+    [Seconds] DECIMAL(18, 10) NOT NULL, 
+    [Stars] DECIMAL(18, 10) NOT NULL, 
     [Vivify] BIT NOT NULL, 
     [VersionId] INT NOT NULL,
 
@@ -29,4 +29,5 @@
     constraint FK_Difficulty_Difficulty2 FOREIGN KEY (Difficulty2Id) REFERENCES BeatSaver.Difficulty2(Id),
     constraint FK_Difficulty_Environment FOREIGN KEY (EnvironmentId) REFERENCES BeatSaver.Environment(Id),
     constraint FK_Difficulty_ParitySummary FOREIGN KEY (ParitySummaryId) REFERENCES BeatSaver.ParitySummary(Id),
+    constraint FK_Difficulty_Version FOREIGN KEY (VersionId) REFERENCES BeatSaver.Version(Id)
 )

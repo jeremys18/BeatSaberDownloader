@@ -1,8 +1,6 @@
-﻿using BeatSaberDownloader.Data.Enums;
+﻿using BeatSaberDownloader.Data.DBContext;
 using BeatSaberDownloader.Data.Models;
-using BeatSaberDownloader.Data.Models.BareModels;
 using BeatSaberDownloader.Data.Models.DbModels;
-using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using TestDownloader;
@@ -119,8 +117,9 @@ internal class Program
 
     private static void PopulateDB()
     {
-        // Use BeatSaverContext to populate the database with songs from songs.json
-        // This is just a placeholder for the actual implementation
+        // This is messy and a lot of code but its also the fastest way to insert the data.
+        // The normal way in EF takes 4+ HOURS. This messy code takes 3 mins or less. So messy code it is!
+
         Console.WriteLine("Populating database...");
         using var context = new BeatSaberDownloader.Data.DBContext.BeatSaverContext();
         var jsonFilename = @"C:\Users\grabb\Desktop\New Lappy\songs.json";
@@ -159,7 +158,6 @@ internal class Program
             SentimentId = ((int)x.stats.sentiment) == 0 ? 1 : (int)x.stats.sentiment
         }).ToList();
 
-        //var ff = md.First(x => x.SongSubName?.Contains("AaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") ?? false);
         context.Users.AddRange(uploaders);
         context.Tags.AddRange(newTags);
         context.MetaDatas.AddRange(md);
@@ -188,77 +186,160 @@ internal class Program
                 Uploaded = song.uploaded,
                 MetadataId = md[i].Id,
                 StatsId = stats[i].Id,
-                UploaderId = uploaders.First(x => x.ExternalId == song.uploader.id).Id,
-                //Tags = newTags.Where(x => song.tags.Contains(x.Name)).ToList(),
-                //Versions = song.versions.Select(v => new Version
-                //{
-                //    Hash = v.hash,
-                //    DownloadURL = v.downloadURL,
-                //    CreatedAt = v.createdAt,
-                //    StateId = (int)v.state,
-                //    CoverURL = v.coverURL,
-                //    Feedback = v.feedback,
-                //    Key = v.key,
-                //    PreviewURL = v.previewURL,
-                //    SageScore = v.sageScore,
-                //    ScheduledAt = v.scheduledAt.Year < 2015 ? null : v.scheduledAt,
-                //    TestplayAt = v.testplayAt.Year < 2015 ? null : v.testplayAt,
-                //    Difficulties = v.diffs.Select(d => new BeatSaberDownloader.Data.Models.DbModels.Difficulty
-                //    {
-                //        CharacteristicId = char.IsDigit(d.characteristic[0]) ? (int)Enum.Parse<BeatSaberDownloader.Data.Enums.Characteristic>($"_{d.characteristic}") : (int)Enum.Parse<BeatSaberDownloader.Data.Enums.Characteristic>(d.characteristic),
-                //        NJS = d.njs,
-                //        Notes = d.notes,
-                //        Obstacles = d.obstacles,
-                //        Bombs = d.bombs,
-                //        Stars = d.stars,
-                //        BlStars = d.blStars,
-                //        Length = d.length,
-                //        NPS = d.nps,
-                //        MaxScore = d.maxScore,
-                //        Label = d.label,
-                //        Difficulty2Id = (int)d.difficulty,
-                //        EnvironmentId = (int)d.environment,
-                //        Chroma = d.chroma,
-                //        Cinema = d.cinema,
-                //        ME = d.me,
-                //        NE = d.ne,
-                //        Vivify = d.vivify,
-                //        Events = d.events,
-                //        Offset = d.offset,
-                //        Seconds = d.seconds,
-                //        ParitySummary = new ParitySummary
-                //        {
-                //            Errors = d.paritySummary.errors,
-                //            Resets = d.paritySummary.resets,
-                //            Warns = d.paritySummary.warns
-                //        }
-
-                //    }).ToList(),
-                //    TestPlays = v.testplays?.Select(tp => new TestPlay
-                //    {
-                //        CreatedAt = tp.createdAt,
-                //        Feedback = tp.feedback,
-                //        FeedbackAt = tp.feedbackAt,
-                //        UserId = uploaders.First(u => u.ExternalId == tp.user.id).Id,
-                //        Video = tp.video,
-                //    }).ToList() ?? new List<TestPlay>()
-                //}).ToList()
+                UploaderId = uploaders.First(x => x.ExternalId == song.uploader.id).Id
             });
         }
 
         context.Songs.AddRange(dbSongs);
         context.SaveChanges();
 
-        var songTags = songs.Where(aa => aa.tags != null).Select(x => x.tags?.Select(y => new { x.id, y })).SelectMany(z => z).Select( a => new SongTag
-        {
-            SongId = dbSongs.First(s => s.Id == a.id).SongId,
-            TagId = newTags.First(t => t.Name == a.y).Id
-        }).ToList();
+        // build lookups for faster mapping
+        var tagLookup = newTags.ToDictionary(t => t.Name, t => t.Id);
+        var songLookup = dbSongs.ToDictionary(s => s.Id, s => s.SongId);
+
+        var songTags = songs
+            .Where(s => s.tags != null)
+            .SelectMany(s => s.tags, (s, tag) => new SongTag
+            {
+                SongId = songLookup[s.id],
+                TagId = tagLookup[tag]
+            })
+            .ToList();
 
 
 
         context.SongTags.AddRange(songTags);
         context.SaveChanges();
+
+        var versions = songs.SelectMany((song, index) => song.versions.Select(v => new BeatSaberDownloader.Data.Models.DbModels.Version
+        {
+            SongId = dbSongs[index].SongId,
+            Hash = v.hash,
+            DownloadURL = v.downloadURL,
+            CreatedAt = v.createdAt,
+            StateId = (int)v.state,
+            CoverURL = v.coverURL,
+            Feedback = v.feedback,
+            Key = v.key,
+            PreviewURL = v.previewURL,
+            SageScore = v.sageScore,
+            ScheduledAt = v.scheduledAt.Year < 2015 ? null : v.scheduledAt,
+            TestplayAt = v.testplayAt.Year < 2015 ? null : v.testplayAt,
+        })).ToList();
+        context.Versions.AddRange(versions);
+        context.SaveChanges();
+
+        // Create ParitySummary entries with explicit keys so we can reliably link them to Difficulties
+        var parityEntries = new List<(int SongIndex, int VersionIndex, int DiffIndex, ParitySummary Entry)>();
+        for (int si = 0; si < songs.Length; si++)
+        {
+            var song = songs[si];
+            for (int vi = 0; vi < song.versions.Length; vi++)
+            {
+                var v = song.versions[vi];
+                for (int di = 0; di < v.diffs.Length; di++)
+                {
+                    var d = v.diffs[di];
+                    var ps = new ParitySummary
+                    {
+                        Errors = d.paritySummary?.errors ?? 0,
+                        Resets = d.paritySummary?.resets ?? 0,
+                        Warns = d.paritySummary?.warns ?? 0
+                    };
+                    parityEntries.Add((si, vi, di, ps));
+                }
+            }
+        }
+
+        context.ParitySummaries.AddRange(parityEntries.Select(p => p.Entry));
+        context.SaveChanges();
+
+        // build a lookup from song/version/diff indices to saved ParitySummary Id
+        var parityLookup = parityEntries.ToDictionary(p => (p.SongIndex, p.VersionIndex, p.DiffIndex), p => p.Entry.Id);
+
+        // Create Difficulty list from songs -> versions -> diffs, link ParitySummaryId and VersionId, then save
+        var difficulties = new List<BeatSaberDownloader.Data.Models.DbModels.Difficulty>();
+        var testPlays = new List<BeatSaberDownloader.Data.Models.DbModels.TestPlay>();
+        var versionGlobalIndex = 0;
+
+        for (int s = 0; s < songs.Length; s++)
+        {
+            var song = songs[s];
+            for (int vIndex = 0; vIndex < song.versions.Length; vIndex++)
+            {
+                var v = song.versions[vIndex];
+                // get corresponding saved Version entity
+                var versionEntity = versions[versionGlobalIndex];
+
+                // map testplays for this version (if any)
+                if (v.testplays != null)
+                {
+                    foreach (var tp in v.testplays)
+                    {
+                        // find uploader/user id for the testplay user
+                        var user = uploaders.FirstOrDefault(u => u.ExternalId == tp.user.id);
+                        if (user == null)
+                            continue; // skip if we don't have the user saved
+
+                        testPlays.Add(new BeatSaberDownloader.Data.Models.DbModels.TestPlay
+                        {
+                            CreatedAt = tp.createdAt,
+                            Feedback = tp.feedback,
+                            FeedbackAt = tp.feedbackAt,
+                            UserId = user.Id,
+                            Video = tp.video,
+                            VersionId = versionEntity.Id
+                        });
+                    }
+                }
+
+                for (int dIndex = 0; dIndex < v.diffs.Length; dIndex++)
+                {
+                    var d = v.diffs[dIndex];
+
+                    var characteristicId = char.IsDigit(d.characteristic[0])
+                        ? (int)Enum.Parse<BeatSaberDownloader.Data.Enums.Characteristic>($"_{d.characteristic}")
+                        : (int)Enum.Parse<BeatSaberDownloader.Data.Enums.Characteristic>(d.characteristic);
+
+                    // lookup parity summary id by indices
+                    parityLookup.TryGetValue((s, vIndex, dIndex), out var parityId);
+
+                    difficulties.Add(new BeatSaberDownloader.Data.Models.DbModels.Difficulty
+                    {
+                        BlStars = d.blStars,
+                        Bombs = d.bombs,
+                        Chroma = d.chroma,
+                        Cinema = d.cinema,
+                        CharacteristicId = characteristicId,
+                        Difficulty2Id = (int)d.difficulty,
+                        EnvironmentId = (int)d.environment,
+                        Events = d.events,
+                        Label = d.label,
+                        Length = d.length,
+                        MaxScore = d.maxScore,
+                        ME = d.me,
+                        NE = d.ne,
+                        NJS = d.njs,
+                        Notes = d.notes,
+                        NPS = d.nps,
+                        Obstacles = d.obstacles,
+                        Offset = d.offset,
+                        ParitySummaryId = parityId,
+                        Seconds = d.seconds,
+                        Stars = d.stars,
+                        Vivify = d.vivify,
+                        VersionId = versionEntity.Id
+                    });
+                }
+
+                versionGlobalIndex++;
+            }
+        }
+
+        context.Difficulties.AddRange(difficulties);
+        context.TestPlays.AddRange(testPlays);
+        context.SaveChanges();
+
         Console.WriteLine("Database populated.");
     }
 }
