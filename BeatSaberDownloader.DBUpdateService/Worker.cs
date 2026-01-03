@@ -4,6 +4,7 @@ using BeatSaberDownloader.Data.Extentions;
 using BeatSaberDownloader.Data.Models;
 using BeatSaberDownloader.Data.Models.DbModels;
 using BeatSaberDownloader.Data.Models.UpdateSrvc;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 
 namespace BeatSaberDownloader.DBUpdateService
@@ -147,24 +148,31 @@ namespace BeatSaberDownloader.DBUpdateService
         public void UpsertSong(UpdateInfo info, BeatSaverContext db)
         {
             var mapInfo = JsonConvert.DeserializeObject<MapDetail>(info.msg.ToString()) ?? throw new ArgumentNullException(nameof(info), "\tError deserializing the update info.");
-            var song = db.Songs.FirstOrDefault(x => x.Id == mapInfo.id) ?? new Song
-            {
-                Id = mapInfo.id,
-                Name = mapInfo.name ?? string.Empty,
-                Uploaded = mapInfo.uploaded,
-                UpdatedAt = mapInfo.updatedAt,
-                CreatedAt = mapInfo.createdAt,
-                LastPublishedAt = mapInfo.lastPublishedAt,
-                Automapper = mapInfo.automapper,
-                BlQualified = mapInfo.blQualified,
-                BlRanked = mapInfo.blRanked,
-                Bookmarked = mapInfo.bookmarked,
-                DeclaredAiId = (int)mapInfo.declaredAi,
-                Qualified = mapInfo.qualified,
-                Ranked = mapInfo.ranked,
-                Description = mapInfo.description ?? string.Empty,
-                Uploader = GetUserByUserDetail(mapInfo.uploader, db)
-            };
+            var song = db.Songs
+                .Include(x => x.Metadata)
+                .Include(x => x.Stats)
+                .Include(x => x.Tags)
+                .Include(x => x.Versions)
+                    .ThenInclude(v => v.Difficulties)
+                        .ThenInclude(d => d.ParitySummary)
+                .FirstOrDefault(x => x.Id == mapInfo.id) ?? new Song
+                {
+                    Id = mapInfo.id,
+                    Name = mapInfo.name ?? string.Empty,
+                    Uploaded = mapInfo.uploaded,
+                    UpdatedAt = mapInfo.updatedAt,
+                    CreatedAt = mapInfo.createdAt,
+                    LastPublishedAt = mapInfo.lastPublishedAt,
+                    Automapper = mapInfo.automapper,
+                    BlQualified = mapInfo.blQualified,
+                    BlRanked = mapInfo.blRanked,
+                    Bookmarked = mapInfo.bookmarked,
+                    DeclaredAiId = (int)mapInfo.declaredAi,
+                    Qualified = mapInfo.qualified,
+                    Ranked = mapInfo.ranked,
+                    Description = mapInfo.description ?? string.Empty,
+                    Uploader = GetUserByUserDetail(mapInfo.uploader, db)
+                };
 
             // Process the update for the json file
             _logger.LogInformation("\tUpdating the song info in the DB....");
