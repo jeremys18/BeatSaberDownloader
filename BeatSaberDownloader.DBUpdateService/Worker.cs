@@ -1,14 +1,10 @@
 using BeatSaberDownloader.Data.DBContext;
-using BeatSaberDownloader.Data.Enums;
 using BeatSaberDownloader.Data.Extentions;
 using BeatSaberDownloader.Data.Models;
 using BeatSaberDownloader.Data.Models.BareModels;
 using BeatSaberDownloader.Data.Models.DbModels;
 using BeatSaberDownloader.Data.Models.UpdateSrvc;
 using Newtonsoft.Json;
-using System;
-using System.Linq;
-using System.Runtime.ConstrainedExecution;
 
 namespace BeatSaberDownloader.DBUpdateService
 {
@@ -131,6 +127,67 @@ namespace BeatSaberDownloader.DBUpdateService
             });
         }
 
+        private void DeleteSongFile(string filePath)
+        {
+            if (!File.Exists(filePath))
+            {
+                _logger.LogWarning($"\tThe file {filePath} does not exist. Cannot move to deleted folder.");
+            }
+            else if (File.Exists($@"G:\BeatSaber\DeletedSongs\{filePath.Split("\\").Last()}"))
+            {
+                _logger.LogWarning($"\tThe file {filePath} is already in the deleted folder. Deleting file from song folder...");
+                File.Delete(filePath);
+            }
+            else
+            {
+                File.Move(filePath, $@"G:\BeatSaber\DeletedSongs\{filePath.Split("\\").Last()}");
+            }
+        }
+
+        public void UpsertSong(UpdateInfo info, BeatSaverContext db)
+        {
+            var mapInfo = JsonConvert.DeserializeObject<MapDetail>(info.msg.ToString()) ?? throw new ArgumentNullException(nameof(info), "\tError deserializing the update info.");
+            var song = db.Songs.FirstOrDefault(x => x.Id == mapInfo.id) ?? new Song
+            {
+                Id = mapInfo.id,
+                Name = mapInfo.name ?? string.Empty,
+                Uploaded = mapInfo.uploaded,
+                UpdatedAt = mapInfo.updatedAt,
+                CreatedAt = mapInfo.createdAt,
+                LastPublishedAt = mapInfo.lastPublishedAt,
+                Automapper = mapInfo.automapper,
+                BlQualified = mapInfo.blQualified,
+                BlRanked = mapInfo.blRanked,
+                Bookmarked = mapInfo.bookmarked,
+                DeclaredAiId = (int)mapInfo.declaredAi,
+                Qualified = mapInfo.qualified,
+                Ranked = mapInfo.ranked,
+                Description = mapInfo.description ?? string.Empty,
+                Uploader = GetUserByUserDetail(mapInfo.uploader, db)
+            };
+
+            // Process the update for the json file
+            _logger.LogInformation("\tUpdating the song info in the DB....");
+
+            //Upsert song. This only needs done if the song exists.
+            if (song.SongId != 0)
+            {
+                UpdateSong(mapInfo, song);
+            }
+
+            //Upsert MetaData
+            UpdateMetadata(mapInfo.metadata, song);
+
+            //Upsert Stats
+            UpdateStats(mapInfo.stats, song);
+
+            //Upsert Tags
+            UpdateTags(mapInfo.tags, song);
+
+            //Upsert Versions
+            UpdateVersions(mapInfo.versions, song, db);
+        }
+
         private void UpdateSong(MapDetail detail, Data.Models.DbModels.Song song)
         {
             song.Automapper = detail.automapper;
@@ -175,54 +232,11 @@ namespace BeatSaberDownloader.DBUpdateService
         private void UpdateTags(string[] tags, Data.Models.DbModels.Song song)
         {
             var existingTagNames = song.Tags.Select(t => t.Name).ToList();
-            var newTags = tags.Except(existingTagNames).Select(t => new Data.Models.DbModels.Tag { Name = t }).ToList();
+            var newTags = tags.Except(existingTagNames).Select(t => new Tag { Name = t }).ToList();
             var deletedTags = existingTagNames.Except(tags).ToList();
 
-            ((List<Data.Models.DbModels.Tag>)song.Tags).AddRange(newTags);
-            ((List<Data.Models.DbModels.Tag>)song.Tags).RemoveAll(t => deletedTags.Contains(t.Name));
-        }
-
-        private void UpdateTestPlays(MapTestplay[] testplays, Data.Models.DbModels.Version version)
-        {
-            foreach (var tp in testplays)
-            {
-                var existingTP = version.TestPlays.FirstOrDefault(t => t.CreatedAt == tp.createdAt) ?? new TestPlay();
-                if (existingTP != null)
-                {
-                    existingTP.Feedback = tp.feedback;
-                    existingTP.FeedbackAt = tp.feedbackAt;
-                    existingTP.Video = tp.video;
-                    existingTP.User = GetUserByUserDetail(tp.user, _db);
-                }
-                else
-                {
-                    version.TestPlays.Add(new TestPlay
-                    {
-                        CreatedAt = tp.createdAt,
-                        Feedback = tp.feedback,
-                        FeedbackAt = tp.feedbackAt,
-                        Video = tp.video,
-                        User = GetUserByUserDetail(tp.user, _db)
-                    });
-                }
-            }
-        }
-
-        private void DeleteSongFile(string filePath)
-        {
-            if (!File.Exists(filePath))
-            {
-                _logger.LogWarning($"\tThe file {filePath} does not exist. Cannot move to deleted folder.");
-            }
-            else if (File.Exists($@"G:\BeatSaber\DeletedSongs\{filePath.Split("\\").Last()}"))
-            {
-                _logger.LogWarning($"\tThe file {filePath} is already in the deleted folder. Deleting file from song folder...");
-                File.Delete(filePath);
-            }
-            else
-            {
-                File.Move(filePath, $@"G:\BeatSaber\DeletedSongs\{filePath.Split("\\").Last()}");
-            }
+            ((List<Tag>)song.Tags).AddRange(newTags);
+            ((List<Tag>)song.Tags).RemoveAll(t => deletedTags.Contains(t.Name));
         }
 
         private void UpdateVersions(MapDetail mapInfo, Data.Models.DbModels.Song song, BeatSaverContext db)
@@ -238,7 +252,7 @@ namespace BeatSaberDownloader.DBUpdateService
             {
                 var existingVersion = song.Versions.FirstOrDefault(v => v.Hash == version.hash) ?? new Data.Models.DbModels.Version { Hash = version.hash };
                 var urlChanged = existingVersion.Id != 0 && version.downloadURL != existingVersion.DownloadURL && !File.Exists(currFiles[version.hash]);
-               
+
                 existingVersion.CoverURL = version.coverURL;
                 existingVersion.CreatedAt = version.createdAt;
                 existingVersion.DownloadURL = version.downloadURL;
@@ -269,7 +283,7 @@ namespace BeatSaberDownloader.DBUpdateService
                         DownloadURL = version.downloadURL
                     });
                 }
-                else if(urlChanged)
+                else if (urlChanged)
                 {
                     _logger.LogInformation($"\tThe update indicates the version with hash {version.hash} has changed and must be re-downloaded. Marking for re-download...");
                     songsToDownload.Add(new DownloadInfo
@@ -280,7 +294,7 @@ namespace BeatSaberDownloader.DBUpdateService
                         DownloadURL = version.downloadURL
                     });
                 }
-                else if(nameAuthorUploaderChanged)
+                else if (nameAuthorUploaderChanged)
                 {
                     _logger.LogInformation($"\tThe update indicates the version with hash {version.hash} has a filename change. Renaming the file...");
                     var oldFileName = currFiles[version.hash];
@@ -292,7 +306,7 @@ namespace BeatSaberDownloader.DBUpdateService
                     else
                     {
                         File.Move(oldFileName, newFileName);
-                    }     
+                    }
                 }
             }
 
@@ -317,7 +331,7 @@ namespace BeatSaberDownloader.DBUpdateService
         {
             foreach (var tp in testplays)
             {
-                var existingTP = version.TestPlays.FirstOrDefault(t => t.CreatedAt == tp.createdAt) ?? new TestPlay();
+                var existingTP = version.TestPlays.FirstOrDefault(t => t.CreatedAt == tp.createdAt) ?? new TestPlay { CreatedAt = tp.createdAt };
 
                 existingTP.Feedback = tp.feedback;
                 existingTP.FeedbackAt = tp.feedbackAt;
@@ -326,7 +340,7 @@ namespace BeatSaberDownloader.DBUpdateService
 
                 if (existingTP.Id == 0)
                 {
-                   version.TestPlays.Add(existingTP);
+                    version.TestPlays.Add(existingTP);
                 }
             }
         }
@@ -336,9 +350,9 @@ namespace BeatSaberDownloader.DBUpdateService
             var deletedDiffs = version.Difficulties.ExceptBy(difficulties.Select(d => ((int)d.difficulty, (int)d.environment)), x => (x.Difficulty2Id, x.EnvironmentId)).ToList();
             foreach (var diff in difficulties)
             {
-                var existingDiff = version.Difficulties.FirstOrDefault(d => d.Difficulty2Id == (int)diff.difficulty && d.EnvironmentId == (int)diff.environment) ?? 
-                    new Data.Models.DbModels.Difficulty 
-                    { 
+                var existingDiff = version.Difficulties.FirstOrDefault(d => d.Difficulty2Id == (int)diff.difficulty && d.EnvironmentId == (int)diff.environment) ??
+                    new Difficulty
+                    {
                         Difficulty2Id = (int)diff.difficulty,
                         EnvironmentId = (int)diff.environment
                     };
@@ -346,9 +360,9 @@ namespace BeatSaberDownloader.DBUpdateService
                 existingDiff.BlStars = diff.blStars;
                 existingDiff.Bombs = diff.bombs;
                 existingDiff.CharacteristicId = char.IsDigit(diff.characteristic[0])
-                   ? (int)Enum.Parse<BeatSaberDownloader.Data.Enums.Characteristic>($"_{diff.characteristic}")
-                   : (int)Enum.Parse<BeatSaberDownloader.Data.Enums.Characteristic>(diff.characteristic);
-                existingDiff.Chroma = diff.chroma; 
+                   ? (int)Enum.Parse<Data.Enums.Characteristic>($"_{diff.characteristic}")
+                   : (int)Enum.Parse<Data.Enums.Characteristic>(diff.characteristic);
+                existingDiff.Chroma = diff.chroma;
                 existingDiff.Cinema = diff.cinema;
                 existingDiff.Events = diff.events;
                 existingDiff.Label = diff.label;
@@ -374,205 +388,15 @@ namespace BeatSaberDownloader.DBUpdateService
             }
 
             // Delete removed difficulties
-            ((List<Data.Models.DbModels.Difficulty>)version.Difficulties).RemoveAll(d => deletedDiffs.Contains(d));
+            ((List<Difficulty>)version.Difficulties).RemoveAll(d => deletedDiffs.Contains(d));
         }
 
-        private void UpdateParitySummary(MapParitySummary summary, Data.Models.DbModels.Difficulty difficulty)
+        private void UpdateParitySummary(MapParitySummary summary, Difficulty difficulty)
         {
             difficulty.ParitySummary ??= new ParitySummary();
             difficulty.ParitySummary.Errors = summary.errors;
             difficulty.ParitySummary.Resets = summary.resets;
             difficulty.ParitySummary.Warns = summary.warns;
-        }
-
-        public void UpsertSong(UpdateInfo info, BeatSaverContext db)
-        {
-            var mapInfo = JsonConvert.DeserializeObject<MapDetail>(info.msg.ToString()) ?? throw new ArgumentNullException(nameof(info), "\tError deserializing the update info.");
-            var song = db.Songs.FirstOrDefault(x => x.Id == mapInfo.id) ?? new Song
-            {
-                Id = mapInfo.id,
-                Name = mapInfo.name ?? string.Empty,
-                Uploaded = mapInfo.uploaded,
-                UpdatedAt = mapInfo.updatedAt,
-                CreatedAt = mapInfo.createdAt,
-                LastPublishedAt = mapInfo.lastPublishedAt,
-                Automapper = mapInfo.automapper,
-                BlQualified = mapInfo.blQualified,
-                BlRanked = mapInfo.blRanked,
-                Bookmarked = mapInfo.bookmarked,
-                DeclaredAiId = (int)mapInfo.declaredAi,
-                Qualified = mapInfo.qualified,
-                Ranked = mapInfo.ranked,
-                Description = mapInfo.description ?? string.Empty,
-                Uploader = GetUserByUserDetail(mapInfo.uploader, db)
-            };
-            var basePath = @"G:\BeatSaber\SongFiles";
-            var songsToDownload = new List<DownloadInfo>();
-
-            // Process the update for the json file
-            _logger.LogInformation("\tUpdating the song info in the DB....");
-
-            //Upsert song. This only needs done if the song exists.
-            if (song.SongId != 0)
-            {
-                UpdateSong(mapInfo, song);
-            }
-
-            //Upsert MetaData
-            UpdateMetadata(mapInfo.metadata, song);
-
-            //Upsert Stats
-            UpdateStats(mapInfo.stats, song);
-
-            //Upsert Tags
-            UpdateTags(mapInfo.tags, song);
-
-            //Upsert Versions
-            UpdateVersions(mapInfo.versions, song, db);
-
-            // Update the song info
-            if (song == null)
-            {
-                _logger.LogWarning($"\tSong with id {mapInfo.id} not found in songs.json. Adding to json...");
-
-                var tags = mapInfo.tags.Select(x  => _db.Tags.FirstOrDefault(y => y.Name == x) ?? new Tag { Name = x }).ToList();
-
-                try
-                {
-                    var dbSong = new Song
-                    {
-                        Id = mapInfo.id,
-                        Name = mapInfo.name ?? string.Empty,
-                        Uploaded = mapInfo.uploaded,
-                        UpdatedAt = mapInfo.updatedAt,
-                        CreatedAt = mapInfo.createdAt,
-                        LastPublishedAt = mapInfo.lastPublishedAt,
-                        Automapper = mapInfo.automapper,
-                        BlQualified = mapInfo.blQualified,
-                        BlRanked = mapInfo.blRanked,
-                        Bookmarked = mapInfo.bookmarked,
-                        DeclaredAiId = (int)mapInfo.declaredAi,
-                        Qualified = mapInfo.qualified,
-                        Ranked = mapInfo.ranked,
-                        Description = mapInfo.description ?? string.Empty,
-                        Uploader = GetUserByUserDetail(mapInfo.uploader, db),
-                        Metadata = new MetaData
-                        {
-                            SongAuthorName = mapInfo.metadata.songAuthorName,
-                            LevelAuthorName = mapInfo.metadata.levelAuthorName ?? string.Empty,
-                            BPM = mapInfo.metadata.bpm,
-                            Duration = mapInfo.metadata.duration,
-                            SongName = mapInfo.metadata.songName ?? string.Empty,
-                            SongSubName = mapInfo.metadata.songSubName
-                        },
-                        Stats = new Stats
-                        {
-                            Downloads = mapInfo.stats.downloads,
-                            Plays = mapInfo.stats.plays,
-                            Upvotes = mapInfo.stats.upvotes,
-                            Downvotes = mapInfo.stats.downvotes,
-                            Score = mapInfo.stats.score,
-                            ScoreOneDP = mapInfo.stats.scoreOneDP,
-                            Reviews = mapInfo.stats.reviews,
-                            SentimentId = (int)mapInfo.stats.sentiment
-                        },
-                        
-                        Tags = tags,
-                        Versions = mapInfo.versions.Select(v => new Data.Models.DbModels.Version
-                        {
-                            Hash = v.hash,
-                            DownloadURL = v.downloadURL,
-                            CreatedAt = v.createdAt,
-                            CoverURL = v.coverURL,
-                            Feedback = v.feedback,
-                            Key = v.key,
-                            PreviewURL = v.previewURL,
-                            SageScore = v.sageScore,
-                            StateId = (int)v.state,
-                            ScheduledAt = v.scheduledAt,
-                            TestplayAt = v.testplayAt,
-                            TestPlays = v.testplays.Select(tp => new TestPlay
-                            {
-                                Feedback = tp.feedback,
-                                FeedbackAt = tp.feedbackAt,
-                                CreatedAt = tp.createdAt,
-                                Video = tp.video,
-                                User = _db.Users.FirstOrDefault(x => x.ExternalId == tp.user.id) ?? new User
-                                {
-                                    Name = mapInfo.uploader.name,
-                                    Admin = mapInfo.uploader.admin,
-                                    Curator = mapInfo.uploader.curator,
-                                    SeniorCurator = mapInfo.uploader.seniorCurator,
-                                    PlaylistUrl = mapInfo.uploader.playlistUrl,
-                                    Avatar = mapInfo.uploader.avatar,
-                                    ExternalId = mapInfo.uploader.id,
-                                    UserTypeId = (int)mapInfo.uploader.type
-                                }
-                            }).ToList(),
-                            Difficulties = v.diffs.Select(d => new Difficulty
-                            {
-                                BlStars = d.blStars,
-                                Bombs = d.bombs,
-                                Chroma = d.chroma,
-                                Cinema = d.cinema,
-                                CharacteristicId = char.IsDigit(d.characteristic[0])
-                                    ? (int)Enum.Parse<BeatSaberDownloader.Data.Enums.Characteristic>($"_{d.characteristic}")
-                                    : (int)Enum.Parse<BeatSaberDownloader.Data.Enums.Characteristic>(d.characteristic),
-                                Difficulty2Id = (int)d.difficulty,
-                                EnvironmentId = (int)d.environment,
-                                Events = d.events,
-                                Label = d.label,
-                                Length = d.length,
-                                MaxScore = d.maxScore,
-                                ME = d.me,
-                                NE = d.ne,
-                                NJS = d.njs,
-                                Notes = d.notes,
-                                NPS = d.nps,
-                                Offset = d.offset,
-                                ParitySummary= new ParitySummary
-                                {
-                                    Errors = d.paritySummary.errors,
-                                    Warns = d.paritySummary.warns,
-                                    Resets = d.paritySummary.resets
-                                },
-                                Obstacles = d.obstacles,
-                                Seconds = d.seconds,
-                                Stars = d.stars,
-                                Vivify = d.vivify
-                            }).ToList()
-                        }).ToList()
-                    };
-
-
-                    _db.Songs.Add(dbSong);
-                    _db.SaveChanges();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error adding song {id} to DB: {Message}", mapInfo.id, ex.Message);
-                }
-
-                var files = mapInfo.GetValidFileNames(basePath);
-                songsToDownload.AddRange(files.Select(f => new DownloadInfo
-                {
-                    Id = mapInfo.id,
-                    Hash = f.Key.Substring(f.Key.Length - 5),
-                    Filename = f.Value,
-                    DownloadURL = mapInfo.versions.First(x => x.hash == f.Key).downloadURL
-                }));
-            }
-            else
-            {
-                
-            }
-            
-
-            foreach (var s in songsToDownload)
-            {
-                var text = JsonConvert.SerializeObject(s, Formatting.Indented);
-                File.WriteAllText($@"G:\BeatSaber\Songs awaiting download\{s.Id}-{s.Hash}.json", text);
-            }
         }
 
         private User GetUserByUserDetail(UserDetail userDetail, BeatSaverContext db)
