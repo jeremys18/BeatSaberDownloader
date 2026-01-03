@@ -20,7 +20,7 @@
     [Uploaded] DATETIME NOT NULL, 
     [UploaderId] INT NOT NULL,
 
-    constraint FK_Song_DeclaredAi FOREIGN KEY (DeclaredAiId) references BeatSaver.DeclaredAi(Id),
+    constraint FK_Song_DeclaredAi FOREIGN KEY (DeclaredAiId) references BeatSaver.DeclaredAI(Id),
     constraint FK_Song_Metadata FOREIGN KEY (MetadataId) references BeatSaver.Metadata(Id),
     constraint FK_Song_Stats FOREIGN KEY (StatsId) references BeatSaver.Stats(Id),
     constraint FK_Song_Uploader FOREIGN KEY (UploaderId) references BeatSaver.[User](Id)

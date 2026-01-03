@@ -1,4 +1,4 @@
-﻿CREATE TABLE [BeatSaver].[MetaData]
+﻿CREATE TABLE [BeatSaver].[Metadata]
 (
 	[Id] INT NOT NULL PRIMARY KEY identity, 
     [BPM] DECIMAL(18, 8) NOT NULL, 

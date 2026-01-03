@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BeatSaberDownloader.Data.Models.DbModels
 {
-    [Table("MetaData", Schema = "BeatSaver")]
+    [Table("Metadata", Schema = "BeatSaver")]
     public class MetaData
     {
         public int Id { get; set; }
