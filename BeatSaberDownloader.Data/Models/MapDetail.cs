@@ -15,7 +15,7 @@ namespace BeatSaberDownloader.Data.Models
         public DateTime createdAt { get; set; }
         public DeclaredAI declaredAi { get; set; }
         public string description { get; set; }
-        public DateTime lastPublishedAt { get; set; }
+        public DateTime? lastPublishedAt { get; set; }
         public MapDetailMetadata metadata { get; set; }
         public string name { get; set; }
         public bool qualified { get; set; }
@@ -23,9 +23,9 @@ namespace BeatSaberDownloader.Data.Models
         public MapStats stats { get; set; }
         //[JsonConverter(typeof(TagsConverter))]
         //public Tag[] tags { get; set; } // Change this back later once we know the real tags since the tags in swagger dont match
-        public string[] tags { get; set; }
+        public string[]? tags { get; set; }
         public DateTime updatedAt { get; set; }
-        public DateTime uploaded { get; set; }
+        public DateTime? uploaded { get; set; }
         public UserDetail uploader { get; set; }
         public MapVersion[] versions { get; set; }
         

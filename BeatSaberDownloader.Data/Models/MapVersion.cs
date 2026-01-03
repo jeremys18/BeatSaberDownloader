@@ -15,9 +15,9 @@ namespace BeatSaberDownloader.Data.Models
         public string key { get; set; }
         public string previewURL { get; set; }
         public short sageScore { get; set; }
-        public DateTime scheduledAt { get; set; }
+        public DateTime? scheduledAt { get; set; }
         public State state { get; set; }
-        public DateTime testplayAt { get; set; }
+        public DateTime? testplayAt { get; set; }
         public MapTestplay[] testplays { get; set; }
     }
 }

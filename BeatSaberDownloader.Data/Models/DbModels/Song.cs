@@ -20,14 +20,14 @@ namespace BeatSaberDownloader.Data.Models.DbModels
         public int DeclaredAiId { get; set; }
         public DateTime? DeletedAt { get; set; }
         public string Description { get; set; }
-        public DateTime LastPublishedAt { get; set; }
+        public DateTime? LastPublishedAt { get; set; }
         public int MetadataId { get; set; }
         public string Name { get; set; }
         public bool Qualified { get; set; }
         public bool Ranked { get; set; }
         public int StatsId{ get; set; }
         public DateTime UpdatedAt { get; set; }
-        public DateTime Uploaded { get; set; }
+        public DateTime? Uploaded { get; set; }
         public int UploaderId { get; set; }
 
 

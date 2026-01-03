@@ -223,8 +223,8 @@ internal class Program
             Key = v.key,
             PreviewURL = v.previewURL,
             SageScore = v.sageScore,
-            ScheduledAt = v.scheduledAt.Year < 2015 ? null : v.scheduledAt,
-            TestplayAt = v.testplayAt.Year < 2015 ? null : v.testplayAt,
+            ScheduledAt = (v.scheduledAt?.Year ?? 1) < 2015 ? null : v.scheduledAt,
+            TestplayAt = (v.testplayAt?.Year ?? 1) < 2015 ? null : v.testplayAt,
         })).ToList();
         context.Versions.AddRange(versions);
         context.SaveChanges();

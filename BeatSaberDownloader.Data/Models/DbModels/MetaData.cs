@@ -7,7 +7,7 @@ namespace BeatSaberDownloader.Data.Models.DbModels
     public class MetaData
     {
         public int Id { get; set; }
-        public float BPM { get; set; }
+        public decimal BPM { get; set; }
         public int Duration { get; set; }
         public string LevelAuthorName { get; set; }
         public string? SongAuthorName { get; set; }

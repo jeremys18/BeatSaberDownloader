@@ -18,7 +18,7 @@ namespace BeatSaberDownloader.DBUpdateService
         {
             _logger = logger;
 
-            _watcher = new FileSystemWatcher(DBUpdateConsts.UpdatesFolder+"n")
+            _watcher = new FileSystemWatcher(DBUpdateConsts.UpdatesFolder)
             {
                 NotifyFilter = NotifyFilters.FileName,
                 EnableRaisingEvents = true,
@@ -63,6 +63,7 @@ namespace BeatSaberDownloader.DBUpdateService
         {
             try
             {
+                Task.Delay(2000).Wait(); // Wait for file to be fully written
                 _logger.LogInformation($"New file detected. Processing {e.Name}....");
 
                 var updateInfo = JsonConvert.DeserializeObject<UpdateInfo>(File.ReadAllText(e.FullPath)) ?? throw new NullReferenceException("Could not decerialize the update file...");
@@ -155,14 +156,15 @@ namespace BeatSaberDownloader.DBUpdateService
                 .Include(x => x.Versions)
                     .ThenInclude(v => v.Difficulties)
                         .ThenInclude(d => d.ParitySummary)
+                .Include(x => x.Uploader)
                 .FirstOrDefault(x => x.Id == mapInfo.id) ?? new Song
                 {
                     Id = mapInfo.id,
                     Name = mapInfo.name ?? string.Empty,
-                    Uploaded = mapInfo.uploaded,
+                    Uploaded = mapInfo.uploaded ?? mapInfo.createdAt,
                     UpdatedAt = mapInfo.updatedAt,
                     CreatedAt = mapInfo.createdAt,
-                    LastPublishedAt = mapInfo.lastPublishedAt,
+                    LastPublishedAt = mapInfo.lastPublishedAt ?? mapInfo.createdAt,
                     Automapper = mapInfo.automapper,
                     BlQualified = mapInfo.blQualified,
                     BlRanked = mapInfo.blRanked,
@@ -194,6 +196,11 @@ namespace BeatSaberDownloader.DBUpdateService
 
             //Upsert Versions
             UpdateVersions(mapInfo, song, db);
+
+            if(song.SongId == 0)
+            {
+                db.Songs.Add(song);
+            }
         }
 
         private void UpdateSong(MapDetail detail, Song song)
@@ -205,11 +212,11 @@ namespace BeatSaberDownloader.DBUpdateService
             song.CreatedAt = detail.createdAt;
             song.DeclaredAiId = (int)detail.declaredAi;
             song.Description = detail.description ?? string.Empty;
-            song.LastPublishedAt = detail.lastPublishedAt;
+            song.LastPublishedAt = detail.lastPublishedAt ?? song.LastPublishedAt;
             song.Name = detail.name ?? string.Empty;
             song.Qualified = detail.qualified;
             song.Ranked = detail.ranked;
-            song.Uploaded = detail.uploaded;
+            song.Uploaded = detail.uploaded ?? song.Uploaded;
             song.UpdatedAt = detail.updatedAt;
         }
 
@@ -221,7 +228,7 @@ namespace BeatSaberDownloader.DBUpdateService
             song.Metadata.LevelAuthorName = detail.levelAuthorName ?? string.Empty;
             song.Metadata.SongAuthorName = detail.songAuthorName;
             song.Metadata.SongName = detail.songName ?? string.Empty;
-            song.Metadata.SongSubName = detail.songSubName;
+            song.Metadata.SongSubName = string.IsNullOrWhiteSpace(detail.songSubName) ? null : detail.songSubName;
         }
 
         private void UpdateStats(MapStats detail, Song song)
@@ -233,15 +240,15 @@ namespace BeatSaberDownloader.DBUpdateService
             song.Stats.Reviews = detail.reviews;
             song.Stats.Score = detail.score;
             song.Stats.ScoreOneDP = detail.scoreOneDP;
-            song.Stats.SentimentId = (int)detail.sentiment;
+            song.Stats.SentimentId = (int)detail.sentiment == 0 ? 1 : (int)detail.sentiment;
             song.Stats.Upvotes = detail.upvotes;
         }
 
-        private void UpdateTags(string[] tags, Song song)
+        private void UpdateTags(string[]? tags, Song song)
         {
             var existingTagNames = song.Tags.Select(t => t.Name).ToList();
-            var newTags = tags.Except(existingTagNames).Select(t => new Tag { Name = t }).ToList();
-            var deletedTags = existingTagNames.Except(tags).ToList();
+            var newTags = tags?.Except(existingTagNames)?.Select(t => new Tag { Name = t })?.ToList() ?? [];
+            var deletedTags = existingTagNames.Except(tags ?? []).ToList();
 
             ((List<Tag>)song.Tags).AddRange(newTags);
             ((List<Tag>)song.Tags).RemoveAll(t => deletedTags.Contains(t.Name));
@@ -249,6 +256,7 @@ namespace BeatSaberDownloader.DBUpdateService
 
         private void UpdateVersions(MapDetail mapInfo, Song song, BeatSaverContext db)
         {
+            
             var currFiles = song.GetValidFileNames(DBUpdateConsts.SongsFolder);
             var newFiles = mapInfo.GetValidFileNames(DBUpdateConsts.SongsFolder);
             var deletedVersions = song.Versions.ExceptBy(mapInfo.versions.Select(v => v.hash), x => x.Hash).ToList();

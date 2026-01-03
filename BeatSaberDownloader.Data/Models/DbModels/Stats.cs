@@ -11,8 +11,8 @@ namespace BeatSaberDownloader.Data.Models.DbModels
         public int Downvotes { get; set; }
         public int Plays { get; set; }
         public int Reviews { get; set; }
-        public float Score { get; set; }
-        public float ScoreOneDP { get; set; }
+        public decimal Score { get; set; }
+        public decimal ScoreOneDP { get; set; }
         public int SentimentId { get; set; }
         public int Upvotes { get; set; }
 
