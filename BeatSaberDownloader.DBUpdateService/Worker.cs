@@ -17,7 +17,7 @@ namespace BeatSaberDownloader.DBUpdateService
         {
             _logger = logger;
 
-            _watcher = new FileSystemWatcher(DBUpdateConsts.UpdatesFolder)
+            _watcher = new FileSystemWatcher(DBUpdateConsts.UpdatesFolder+"n")
             {
                 NotifyFilter = NotifyFilters.FileName,
                 EnableRaisingEvents = true,

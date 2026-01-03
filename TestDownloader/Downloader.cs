@@ -50,12 +50,10 @@ namespace TestDownloader
 
             // save to file
             var text = JsonConvert.SerializeObject(songs, Formatting.Indented);
-            var filePath = Path.Combine("C:\\Users\\grabb\\Desktop\\New Lappy", "songs.json");
-            //Directory.CreateDirectory(BeatSaverConsts.BeatSaverDataDirectory); // Ensure the directory exists
+            var filePath = Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, "songs.json");
+            Directory.CreateDirectory(BeatSaverConsts.BeatSaverDataDirectory); // Ensure the directory exists
             File.WriteAllText(filePath, text);
             Console.WriteLine($"Song info downloaded. Found {songs.Length} songs.");
-            // start db updator
-
         }
     }
 }

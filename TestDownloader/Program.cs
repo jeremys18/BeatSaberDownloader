@@ -1,10 +1,10 @@
-﻿using BeatSaberDownloader.Data.DBContext;
+﻿using BeatSaberDownloader.Data.Consts;
+using BeatSaberDownloader.Data.DBContext;
 using BeatSaberDownloader.Data.Models;
 using BeatSaberDownloader.Data.Models.DbModels;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using TestDownloader;
-using Version = BeatSaberDownloader.Data.Models.DbModels.Version;
 
 //await SongInfoDownloader.StartAsync();
 
@@ -121,8 +121,8 @@ internal class Program
         // The normal way in EF takes 4+ HOURS. This messy code takes 3 mins or less. So messy code it is!
 
         Console.WriteLine("Populating database...");
-        using var context = new BeatSaberDownloader.Data.DBContext.BeatSaverContext();
-        var jsonFilename = @"C:\Users\grabb\Desktop\New Lappy\songs.json";
+        using var context = new BeatSaverContext();
+        var jsonFilename = Path.Combine(BeatSaverConsts.BeatSaverDataDirectory, "songs.json");
         var currentJsonText = File.ReadAllText(jsonFilename);
         var songs = JsonConvert.DeserializeObject<MapDetail[]>(currentJsonText) ?? throw new NullReferenceException("Could not deserialize current song list...");
         var uploaders = songs.Select(s => s.uploader).DistinctBy(u => u.id).Select(x => new User
@@ -164,11 +164,11 @@ internal class Program
         context.Stats.AddRange(stats);
         context.SaveChanges();
 
-        var dbSongs = new List<BeatSaberDownloader.Data.Models.DbModels.Song>();
+        var dbSongs = new List<Song>();
         for (int i = 0; i < songs.Count(); i++)
         {
             var song = songs[i];
-            dbSongs.Add(new BeatSaberDownloader.Data.Models.DbModels.Song
+            dbSongs.Add(new Song
             {
                 Id = song.id,
                 Automapper = song.automapper,
@@ -258,8 +258,8 @@ internal class Program
         var parityLookup = parityEntries.ToDictionary(p => (p.SongIndex, p.VersionIndex, p.DiffIndex), p => p.Entry.Id);
 
         // Create Difficulty list from songs -> versions -> diffs, link ParitySummaryId and VersionId, then save
-        var difficulties = new List<BeatSaberDownloader.Data.Models.DbModels.Difficulty>();
-        var testPlays = new List<BeatSaberDownloader.Data.Models.DbModels.TestPlay>();
+        var difficulties = new List<Difficulty>();
+        var testPlays = new List<TestPlay>();
         var versionGlobalIndex = 0;
 
         for (int s = 0; s < songs.Length; s++)
@@ -281,7 +281,7 @@ internal class Program
                         if (user == null)
                             continue; // skip if we don't have the user saved
 
-                        testPlays.Add(new BeatSaberDownloader.Data.Models.DbModels.TestPlay
+                        testPlays.Add(new TestPlay
                         {
                             CreatedAt = tp.createdAt,
                             Feedback = tp.feedback,
@@ -304,7 +304,7 @@ internal class Program
                     // lookup parity summary id by indices
                     parityLookup.TryGetValue((s, vIndex, dIndex), out var parityId);
 
-                    difficulties.Add(new BeatSaberDownloader.Data.Models.DbModels.Difficulty
+                    difficulties.Add(new Difficulty
                     {
                         BlStars = d.blStars,
                         Bombs = d.bombs,
