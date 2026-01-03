@@ -1,3 +1,4 @@
+using BeatSaberDownloader.Data.Consts;
 using BeatSaberDownloader.Data.DBContext;
 using BeatSaberDownloader.Data.Extentions;
 using BeatSaberDownloader.Data.Models;
@@ -16,7 +17,7 @@ namespace BeatSaberDownloader.DBUpdateService
         {
             _logger = logger;
 
-            _watcher = new FileSystemWatcher(@"G:\BeatSaber\Updates")
+            _watcher = new FileSystemWatcher(DBUpdateConsts.UpdatesFolder)
             {
                 NotifyFilter = NotifyFilters.FileName,
                 EnableRaisingEvents = true,
@@ -113,16 +114,16 @@ namespace BeatSaberDownloader.DBUpdateService
 
             _logger.LogInformation("\tMoving the song files to the deleted folder");
 
-            Directory.GetFiles(@"G:\BeatSaber\SongFiles", $"{song.Id}*").ToList().ForEach(f =>
+            Directory.GetFiles(DBUpdateConsts.SongsFolder, $"{song.Id}*").ToList().ForEach(f =>
             {
                 var filename = Path.GetFileName(f);
-                if (File.Exists($@"G:\BeatSaber\DeletedSongs\{filename}"))
+                if (File.Exists($"{DBUpdateConsts.DeletedSongsFolder}{filename}"))
                 {
                     _logger.LogWarning($"\tFile {filename} has already been deleted. Deleting song file instead...");
                     File.Delete(f);
                     return;
                 }
-                File.Move(f, $@"G:\BeatSaber\DeletedSongs\{filename}");
+                File.Move(f, $"{DBUpdateConsts.DeletedSongsFolder}{filename}");
             });
         }
 
@@ -132,14 +133,14 @@ namespace BeatSaberDownloader.DBUpdateService
             {
                 _logger.LogWarning($"\tThe file {filePath} does not exist. Cannot move to deleted folder.");
             }
-            else if (File.Exists($@"G:\BeatSaber\DeletedSongs\{filePath.Split("\\").Last()}"))
+            else if (File.Exists($"{DBUpdateConsts.DeletedSongsFolder}{filePath.Split("\\").Last()}"))
             {
                 _logger.LogWarning($"\tThe file {filePath} is already in the deleted folder. Deleting file from song folder...");
                 File.Delete(filePath);
             }
             else
             {
-                File.Move(filePath, $@"G:\BeatSaber\DeletedSongs\{filePath.Split("\\").Last()}");
+                File.Move(filePath, $"{DBUpdateConsts.DeletedSongsFolder}{filePath.Split("\\").Last()}");
             }
         }
 
@@ -240,7 +241,6 @@ namespace BeatSaberDownloader.DBUpdateService
 
         private void UpdateVersions(MapDetail mapInfo, Song song, BeatSaverContext db)
         {
-            var basePath = @"G:\BeatSaber\SongFiles";
             var currFiles = song.GetValidFileNames(basePath);
             var newFiles = mapInfo.GetValidFileNames(basePath);
             var deletedVersions = song.Versions.ExceptBy(mapInfo.versions.Select(v => v.hash), x => x.Hash).ToList();
@@ -322,7 +322,7 @@ namespace BeatSaberDownloader.DBUpdateService
             foreach (var s in songsToDownload)
             {
                 var text = JsonConvert.SerializeObject(s, Formatting.Indented);
-                File.WriteAllText($@"G:\BeatSaber\Songs awaiting download\{s.Id}-{s.Hash}.json", text);
+                File.WriteAllText($"{DBUpdateConsts.SongsToDownloadFolder}{s.Id}-{s.Hash}.json", text);
             }
         }
 
