@@ -241,8 +241,8 @@ namespace BeatSaberDownloader.DBUpdateService
 
         private void UpdateVersions(MapDetail mapInfo, Song song, BeatSaverContext db)
         {
-            var currFiles = song.GetValidFileNames(basePath);
-            var newFiles = mapInfo.GetValidFileNames(basePath);
+            var currFiles = song.GetValidFileNames(DBUpdateConsts.SongsFolder);
+            var newFiles = mapInfo.GetValidFileNames(DBUpdateConsts.SongsFolder);
             var deletedVersions = song.Versions.ExceptBy(mapInfo.versions.Select(v => v.hash), x => x.Hash).ToList();
             var songsToDownload = new List<DownloadInfo>();
             var nameAuthorUploaderChanged = song.Name != mapInfo.name || mapInfo.metadata.songAuthorName != song.Metadata?.SongAuthorName || mapInfo.uploader.name != song.Uploader?.Name;

@@ -4,6 +4,7 @@ using Serilog.Events;
 using Serilog.Sinks.MSSqlServer;
 using Microsoft.EntityFrameworkCore;
 using BeatSaberDownloader.Data.DBContext;
+using BeatSaberDownloader.Data.Consts;
 
 var connectionString = Environment.GetEnvironmentVariable("DBUPDATE_SERVICE_LOG_DB") ?? "Server=.;Database=BeatSaberDownloader;Trusted_Connection=True;TrustServerCertificate=True;";
 
@@ -23,7 +24,7 @@ Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .Enrich.FromLogContext()
-    .WriteTo.File(@"G:\BeatSaber\Logs\DBUpdateService.log", rollingInterval: RollingInterval.Day)
+    .WriteTo.File(DBUpdateConsts.LogFile, rollingInterval: RollingInterval.Day)
     .WriteTo.MSSqlServer(
         connectionString: connectionString,
         sinkOptions: sinkOptions,
