@@ -7,6 +7,14 @@ namespace BeatSaberDownloader.Data.DBContext
 {
     public class BeatSaverContext : DbContext
     {
+        public BeatSaverContext()
+        {
+        }
+
+        public BeatSaverContext(DbContextOptions<BeatSaverContext> options) : base(options)
+        {
+        }
+
         public DbSet<Characteristic> Characteristics { get; set; } = null!;
         public DbSet<DeclaredAI> DeclaredAIs { get; set; } = null!;
         public DbSet<Difficulty> Difficulties { get; set; } = null!;
@@ -27,8 +35,11 @@ namespace BeatSaberDownloader.Data.DBContext
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            // Configure the database connection string here
-            optionsBuilder.UseSqlServer("Server=.;Database=BeatSaver;Trusted_Connection=True;TrustServerCertificate=True;");
+            // Only configure a default connection if none was provided (helps when using tools or fallback)
+            if (!optionsBuilder.IsConfigured)
+            {
+                optionsBuilder.UseSqlServer("Server=.;Database=BeatSaver;Trusted_Connection=True;TrustServerCertificate=True;");
+            }
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

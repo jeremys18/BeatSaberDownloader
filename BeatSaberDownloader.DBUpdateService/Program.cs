@@ -2,6 +2,8 @@ using BeatSaberDownloader.DBUpdateService;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.MSSqlServer;
+using Microsoft.EntityFrameworkCore;
+using BeatSaberDownloader.Data.DBContext;
 
 var connectionString = Environment.GetEnvironmentVariable("DBUPDATE_SERVICE_LOG_DB") ?? "Server=.;Database=BeatSaberDownloader;Trusted_Connection=True;TrustServerCertificate=True;";
 
@@ -30,6 +32,13 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 var builder = Host.CreateApplicationBuilder(args);
+// Ensure appsettings.json is included as a configuration source
+builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+
+// Register DbContext using connection string from configuration
+var beatSaverConn = builder.Configuration.GetConnectionString("BeatSaver") ?? "Server=.;Database=BeatSaver;Trusted_Connection=True;TrustServerCertificate=True;";
+builder.Services.AddDbContext<BeatSaverContext>(options => options.UseSqlServer(beatSaverConn));
+
 builder.Services.AddWindowsService(options =>
 {
     options.ServiceName = "BeatSaber DB Update Service";

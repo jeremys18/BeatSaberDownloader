@@ -1,7 +1,14 @@
+using BeatSaberDownloader.Data.DBContext;
+using BeatSaberDownloader.Data.Enums;
 using BeatSaberDownloader.Data.Extentions;
 using BeatSaberDownloader.Data.Models;
+using BeatSaberDownloader.Data.Models.BareModels;
+using BeatSaberDownloader.Data.Models.DbModels;
 using BeatSaberDownloader.Data.Models.UpdateSrvc;
 using Newtonsoft.Json;
+using System;
+using System.Linq;
+using System.Runtime.ConstrainedExecution;
 
 namespace BeatSaberDownloader.DBUpdateService
 {
@@ -13,6 +20,7 @@ namespace BeatSaberDownloader.DBUpdateService
         public Worker(ILogger<Worker> logger)
         {
             _logger = logger;
+
             _watcher = new FileSystemWatcher(@"G:\BeatSaber\Updates")
             {
                 NotifyFilter = NotifyFilters.FileName,
@@ -58,100 +66,493 @@ namespace BeatSaberDownloader.DBUpdateService
         {
             try
             {
-                Task.Delay(2000).Wait(); // Wait for 2 seconds to ensure file is fully written
-                var jsonFilename = @"G:\BeatSaber\songs.json";
                 _logger.LogInformation($"New file detected. Processing {e.Name}....");
-                // Ensure there is not already a file with a name _{filenum} that is greater than current file (a newer file). If there is then disregard this update and delete file (update will be in later file)
-                if (File.Exists(GetNextFileVersion(e.FullPath)))
-                {
-                    _logger.LogWarning($"\tA newer file exists for {e.Name}. Deleting file. Will process update in newer file instead...");
-                    File.Delete(e.FullPath);
-                    return;
-                }
 
                 var updateInfo = JsonConvert.DeserializeObject<UpdateInfo>(File.ReadAllText(e.FullPath)) ?? throw new NullReferenceException("Could not decerialize the update file...");
 
-                var currentJsonText = string.Empty;
-                var stream = jsonFilename.GetFileAccess(FileMode.Open, FileAccess.Read);
-                var reader = new StreamReader(stream);
-                currentJsonText = reader.ReadToEnd();
-                reader.Close();
-                stream.Close();
-                reader.Dispose();
-                stream.Dispose();
-                reader = null;
-                stream = null;
-
-
-                var songs = JsonConvert.DeserializeObject<List<MapDetail>>(currentJsonText) ?? throw new NullReferenceException("Could not deserialize current song list...");
-
-                if (updateInfo.msg is string)
+                using (var db = new BeatSaverContext())
                 {
-                    var song = songs.FirstOrDefault(x => x.id == (string)updateInfo.msg);
-                    if(song == null)
-                    {
-                        _logger.LogWarning($"\tSong with id {(string)updateInfo.msg} not found in songs.json. Cannot delete non-existent song...");
-                        File.Delete(e.FullPath);
-                        return;
-                    }
-                    songs = [.. songs.Where(x => x.id != (string)updateInfo.msg)];
-                    DeleteSong(song);
+                    UpsertdSong(updateInfo, db);
+                    db.SaveChanges();
                 }
-                else
-                {
-                    UpdateSong(updateInfo, songs);
-                    
-                }
-
-                // Save new state of json
-                var stream2 = jsonFilename.GetFileAccess(FileMode.Create, FileAccess.Write);
-                var writer = new StreamWriter(stream2);
-                
-                writer.Write(JsonConvert.SerializeObject(songs, Formatting.Indented));
-                writer.Flush();
-                writer.Close();
-                stream2.Close();
-                writer.Dispose();
-                stream2.Dispose();
-                writer = null;
-                stream2 = null;
-                songs = null;
-                updateInfo = null;
-                currentJsonText = null;
-
-                _logger.LogInformation($"\tUpdated {jsonFilename}....");
 
                 // Delete the file after processing
                 _logger.LogInformation($"\tFinished processing update. Deleting file {e.Name}...");
                 File.Delete(e.FullPath);
-                
-
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing update file {filename}: {Message}", e.Name, ex.Message);
             }
-            
-            GC.Collect();
         }
 
-        public void UpdateSong(UpdateInfo info, List<MapDetail> songs)
+        private void UpsertdSong(UpdateInfo info, BeatSaverContext db)
         {
-            var mapInfo = JsonConvert.DeserializeObject<MapDetail>(info.msg.ToString());
-            var song = songs.FirstOrDefault(x => x.id == mapInfo.id);
+            if (info.msg is string id)
+            {   
+                DeleteSong(id, db);
+            }
+            else
+            {
+                UpsertSong(info, db);
+            }
+        }
+
+        private void DeleteSong(string id, BeatSaverContext db)
+        {
+            var song = db.Songs.FirstOrDefault(x => x.Id == id);
+            if (song == null)
+            {
+                _logger.LogWarning($"\tSong with id {id} not found in the DB. Cannot delete non-existent song...");
+                return;
+            }
+
+            _logger.LogInformation("\tMarking the song and all versions as deleted in the DB....");
+            // Mark song as deleted in DB
+            var now = DateTime.UtcNow;
+            song.DeletedAt = now;
+            foreach (var item in song.Versions)
+            {
+                item.DeletedAt = now;
+            }
+
+            _logger.LogInformation("\tMoving the song files to the deleted folder");
+
+            Directory.GetFiles(@"G:\BeatSaber\SongFiles", $"{song.Id}*").ToList().ForEach(f =>
+            {
+                var filename = Path.GetFileName(f);
+                if (File.Exists($@"G:\BeatSaber\DeletedSongs\{filename}"))
+                {
+                    _logger.LogWarning($"\tFile {filename} has already been deleted. Deleting song file instead...");
+                    File.Delete(f);
+                    return;
+                }
+                File.Move(f, $@"G:\BeatSaber\DeletedSongs\{filename}");
+            });
+        }
+
+        private void UpdateSong(MapDetail detail, Data.Models.DbModels.Song song)
+        {
+            song.Automapper = detail.automapper;
+            song.BlQualified = detail.blQualified;
+            song.BlRanked = detail.blRanked;
+            song.Bookmarked = detail.bookmarked;
+            song.CreatedAt = detail.createdAt;
+            song.DeclaredAiId = (int)detail.declaredAi;
+            song.Description = detail.description ?? string.Empty;
+            song.LastPublishedAt = detail.lastPublishedAt;
+            song.Name = detail.name ?? string.Empty;
+            song.Qualified = detail.qualified;
+            song.Ranked = detail.ranked;
+            song.Uploaded = detail.uploaded;
+            song.UpdatedAt = detail.updatedAt;
+        }
+
+        private void UpdateMetadata(MapDetailMetadata detail, Data.Models.DbModels.Song song)
+        {
+            song.Metadata ??= new MetaData();
+            song.Metadata.BPM = detail.bpm;
+            song.Metadata.Duration = detail.duration;
+            song.Metadata.LevelAuthorName = detail.levelAuthorName ?? string.Empty;
+            song.Metadata.SongAuthorName = detail.songAuthorName;
+            song.Metadata.SongName = detail.songName ?? string.Empty;
+            song.Metadata.SongSubName = detail.songSubName;
+        }
+
+        private void UpdateStats(MapStats detail, Data.Models.DbModels.Song song)
+        {
+            song.Stats ??= new Stats();
+            song.Stats.Downvotes = detail.downvotes;
+            song.Stats.Downloads = detail.downloads;
+            song.Stats.Plays = detail.plays;
+            song.Stats.Reviews = detail.reviews;
+            song.Stats.Score = detail.score;
+            song.Stats.ScoreOneDP = detail.scoreOneDP;
+            song.Stats.SentimentId = (int)detail.sentiment;
+            song.Stats.Upvotes = detail.upvotes;
+        }
+
+        private void UpdateTags(string[] tags, Data.Models.DbModels.Song song)
+        {
+            var existingTagNames = song.Tags.Select(t => t.Name).ToList();
+            var newTags = tags.Except(existingTagNames).Select(t => new Data.Models.DbModels.Tag { Name = t }).ToList();
+            var deletedTags = existingTagNames.Except(tags).ToList();
+
+            ((List<Data.Models.DbModels.Tag>)song.Tags).AddRange(newTags);
+            ((List<Data.Models.DbModels.Tag>)song.Tags).RemoveAll(t => deletedTags.Contains(t.Name));
+        }
+
+        private void UpdateTestPlays(MapTestplay[] testplays, Data.Models.DbModels.Version version)
+        {
+            foreach (var tp in testplays)
+            {
+                var existingTP = version.TestPlays.FirstOrDefault(t => t.CreatedAt == tp.createdAt) ?? new TestPlay();
+                if (existingTP != null)
+                {
+                    existingTP.Feedback = tp.feedback;
+                    existingTP.FeedbackAt = tp.feedbackAt;
+                    existingTP.Video = tp.video;
+                    existingTP.User = GetUserByUserDetail(tp.user, _db);
+                }
+                else
+                {
+                    version.TestPlays.Add(new TestPlay
+                    {
+                        CreatedAt = tp.createdAt,
+                        Feedback = tp.feedback,
+                        FeedbackAt = tp.feedbackAt,
+                        Video = tp.video,
+                        User = GetUserByUserDetail(tp.user, _db)
+                    });
+                }
+            }
+        }
+
+        private void DeleteSongFile(string filePath)
+        {
+            if (!File.Exists(filePath))
+            {
+                _logger.LogWarning($"\tThe file {filePath} does not exist. Cannot move to deleted folder.");
+            }
+            else if (File.Exists($@"G:\BeatSaber\DeletedSongs\{filePath.Split("\\").Last()}"))
+            {
+                _logger.LogWarning($"\tThe file {filePath} is already in the deleted folder. Deleting file from song folder...");
+                File.Delete(filePath);
+            }
+            else
+            {
+                File.Move(filePath, $@"G:\BeatSaber\DeletedSongs\{filePath.Split("\\").Last()}");
+            }
+        }
+
+        private void UpdateVersions(MapDetail mapInfo, Data.Models.DbModels.Song song, BeatSaverContext db)
+        {
+            var basePath = @"G:\BeatSaber\SongFiles";
+            var currFiles = song.GetValidFileNames(basePath);
+            var newFiles = mapInfo.GetValidFileNames(basePath);
+            var deletedVersions = song.Versions.ExceptBy(mapInfo.versions.Select(v => v.hash), x => x.Hash).ToList();
+            var songsToDownload = new List<DownloadInfo>();
+            var nameAuthorUploaderChanged = song.Name != mapInfo.name || mapInfo.metadata.songAuthorName != song.Metadata?.SongAuthorName || mapInfo.uploader.name != song.Uploader?.Name;
+
+            foreach (var version in mapInfo.versions) // These are updated or new versions
+            {
+                var existingVersion = song.Versions.FirstOrDefault(v => v.Hash == version.hash) ?? new Data.Models.DbModels.Version { Hash = version.hash };
+                var urlChanged = existingVersion.Id != 0 && version.downloadURL != existingVersion.DownloadURL && !File.Exists(currFiles[version.hash]);
+               
+                existingVersion.CoverURL = version.coverURL;
+                existingVersion.CreatedAt = version.createdAt;
+                existingVersion.DownloadURL = version.downloadURL;
+                existingVersion.Feedback = version.feedback;
+                existingVersion.Key = version.key;
+                existingVersion.PreviewURL = version.previewURL;
+                existingVersion.SageScore = version.sageScore;
+                existingVersion.ScheduledAt = version.scheduledAt;
+                existingVersion.StateId = (int)version.state;
+                existingVersion.TestplayAt = version.testplayAt;
+
+                // Version done. Now process testplays
+                UpdateTestPlays(version.testplays ?? [], existingVersion, db);
+
+                // Now process Difficulties
+                UpdateDifficulties(version.diffs, existingVersion, db);
+
+                // At this point everything should be updated for the db so process what needs to be done for files
+                if (existingVersion.Id == 0)
+                {
+                    _logger.LogInformation($"\tThe update indicates the version with hash {version.hash} has been added. Adding to DB and marking for download...");
+                    song.Versions.Add(existingVersion);
+                    songsToDownload.Add(new DownloadInfo
+                    {
+                        Id = song.Id,
+                        Hash = version.hash.Substring(version.hash.Length - 5),
+                        Filename = newFiles[version.hash],
+                        DownloadURL = version.downloadURL
+                    });
+                }
+                else if(urlChanged)
+                {
+                    _logger.LogInformation($"\tThe update indicates the version with hash {version.hash} has changed and must be re-downloaded. Marking for re-download...");
+                    songsToDownload.Add(new DownloadInfo
+                    {
+                        Id = song.Id,
+                        Hash = version.hash.Substring(version.hash.Length - 5),
+                        Filename = newFiles[version.hash],
+                        DownloadURL = version.downloadURL
+                    });
+                }
+                else if(nameAuthorUploaderChanged)
+                {
+                    _logger.LogInformation($"\tThe update indicates the version with hash {version.hash} has a filename change. Renaming the file...");
+                    var oldFileName = currFiles[version.hash];
+                    var newFileName = newFiles[version.hash];
+                    if (!File.Exists(oldFileName))
+                    {
+                        _logger.LogWarning($"\tThe file {oldFileName} does not exist. Cannot rename to {newFileName}.");
+                    }
+                    else
+                    {
+                        File.Move(oldFileName, newFileName);
+                    }     
+                }
+            }
+
+            // Delete removed versions
+            foreach (var del in deletedVersions)
+            {
+                _logger.LogInformation($"\tThe update indicates the version with hash {del} has been deleted. Marking DB entry as deleted and moving the file...");
+                del.DeletedAt = DateTime.UtcNow;
+
+                DeleteSongFile(currFiles[del.Hash]);
+            }
+
+            // Finally, write out the download info for new or updated versions
+            foreach (var s in songsToDownload)
+            {
+                var text = JsonConvert.SerializeObject(s, Formatting.Indented);
+                File.WriteAllText($@"G:\BeatSaber\Songs awaiting download\{s.Id}-{s.Hash}.json", text);
+            }
+        }
+
+        private void UpdateTestPlays(MapTestplay[] testplays, Data.Models.DbModels.Version version, BeatSaverContext db)
+        {
+            foreach (var tp in testplays)
+            {
+                var existingTP = version.TestPlays.FirstOrDefault(t => t.CreatedAt == tp.createdAt) ?? new TestPlay();
+
+                existingTP.Feedback = tp.feedback;
+                existingTP.FeedbackAt = tp.feedbackAt;
+                existingTP.Video = tp.video;
+                existingTP.User = GetUserByUserDetail(tp.user, db);
+
+                if (existingTP.Id == 0)
+                {
+                   version.TestPlays.Add(existingTP);
+                }
+            }
+        }
+
+        private void UpdateDifficulties(MapDifficulty[] difficulties, Data.Models.DbModels.Version version, BeatSaverContext db)
+        {
+            var deletedDiffs = version.Difficulties.ExceptBy(difficulties.Select(d => ((int)d.difficulty, (int)d.environment)), x => (x.Difficulty2Id, x.EnvironmentId)).ToList();
+            foreach (var diff in difficulties)
+            {
+                var existingDiff = version.Difficulties.FirstOrDefault(d => d.Difficulty2Id == (int)diff.difficulty && d.EnvironmentId == (int)diff.environment) ?? 
+                    new Data.Models.DbModels.Difficulty 
+                    { 
+                        Difficulty2Id = (int)diff.difficulty,
+                        EnvironmentId = (int)diff.environment
+                    };
+
+                existingDiff.BlStars = diff.blStars;
+                existingDiff.Bombs = diff.bombs;
+                existingDiff.CharacteristicId = char.IsDigit(diff.characteristic[0])
+                   ? (int)Enum.Parse<BeatSaberDownloader.Data.Enums.Characteristic>($"_{diff.characteristic}")
+                   : (int)Enum.Parse<BeatSaberDownloader.Data.Enums.Characteristic>(diff.characteristic);
+                existingDiff.Chroma = diff.chroma; 
+                existingDiff.Cinema = diff.cinema;
+                existingDiff.Events = diff.events;
+                existingDiff.Label = diff.label;
+                existingDiff.Length = diff.length;
+                existingDiff.MaxScore = diff.maxScore;
+                existingDiff.ME = diff.me;
+                existingDiff.NE = diff.ne;
+                existingDiff.NJS = diff.njs;
+                existingDiff.Notes = diff.notes;
+                existingDiff.NPS = diff.nps;
+                existingDiff.Offset = diff.offset;
+                existingDiff.Obstacles = diff.obstacles;
+                existingDiff.Seconds = diff.seconds;
+                existingDiff.Stars = diff.stars;
+                existingDiff.Vivify = diff.vivify;
+
+                UpdateParitySummary(diff.paritySummary, existingDiff);
+
+                if (existingDiff.Id == 0)
+                {
+                    version.Difficulties.Add(existingDiff);
+                }
+            }
+
+            // Delete removed difficulties
+            ((List<Data.Models.DbModels.Difficulty>)version.Difficulties).RemoveAll(d => deletedDiffs.Contains(d));
+        }
+
+        private void UpdateParitySummary(MapParitySummary summary, Data.Models.DbModels.Difficulty difficulty)
+        {
+            difficulty.ParitySummary ??= new ParitySummary();
+            difficulty.ParitySummary.Errors = summary.errors;
+            difficulty.ParitySummary.Resets = summary.resets;
+            difficulty.ParitySummary.Warns = summary.warns;
+        }
+
+        public void UpsertSong(UpdateInfo info, BeatSaverContext db)
+        {
+            var mapInfo = JsonConvert.DeserializeObject<MapDetail>(info.msg.ToString()) ?? throw new ArgumentNullException(nameof(info), "\tError deserializing the update info.");
+            var song = db.Songs.FirstOrDefault(x => x.Id == mapInfo.id) ?? new Song
+            {
+                Id = mapInfo.id,
+                Name = mapInfo.name ?? string.Empty,
+                Uploaded = mapInfo.uploaded,
+                UpdatedAt = mapInfo.updatedAt,
+                CreatedAt = mapInfo.createdAt,
+                LastPublishedAt = mapInfo.lastPublishedAt,
+                Automapper = mapInfo.automapper,
+                BlQualified = mapInfo.blQualified,
+                BlRanked = mapInfo.blRanked,
+                Bookmarked = mapInfo.bookmarked,
+                DeclaredAiId = (int)mapInfo.declaredAi,
+                Qualified = mapInfo.qualified,
+                Ranked = mapInfo.ranked,
+                Description = mapInfo.description ?? string.Empty,
+                Uploader = GetUserByUserDetail(mapInfo.uploader, db)
+            };
             var basePath = @"G:\BeatSaber\SongFiles";
             var songsToDownload = new List<DownloadInfo>();
 
             // Process the update for the json file
-            _logger.LogInformation("\tUpdating the song info in the json file....");
+            _logger.LogInformation("\tUpdating the song info in the DB....");
 
+            //Upsert song. This only needs done if the song exists.
+            if (song.SongId != 0)
+            {
+                UpdateSong(mapInfo, song);
+            }
+
+            //Upsert MetaData
+            UpdateMetadata(mapInfo.metadata, song);
+
+            //Upsert Stats
+            UpdateStats(mapInfo.stats, song);
+
+            //Upsert Tags
+            UpdateTags(mapInfo.tags, song);
+
+            //Upsert Versions
+            UpdateVersions(mapInfo.versions, song, db);
 
             // Update the song info
             if (song == null)
             {
                 _logger.LogWarning($"\tSong with id {mapInfo.id} not found in songs.json. Adding to json...");
-                songs.Add(mapInfo);
-                // Todo: Add the song to the DB
+
+                var tags = mapInfo.tags.Select(x  => _db.Tags.FirstOrDefault(y => y.Name == x) ?? new Tag { Name = x }).ToList();
+
+                try
+                {
+                    var dbSong = new Song
+                    {
+                        Id = mapInfo.id,
+                        Name = mapInfo.name ?? string.Empty,
+                        Uploaded = mapInfo.uploaded,
+                        UpdatedAt = mapInfo.updatedAt,
+                        CreatedAt = mapInfo.createdAt,
+                        LastPublishedAt = mapInfo.lastPublishedAt,
+                        Automapper = mapInfo.automapper,
+                        BlQualified = mapInfo.blQualified,
+                        BlRanked = mapInfo.blRanked,
+                        Bookmarked = mapInfo.bookmarked,
+                        DeclaredAiId = (int)mapInfo.declaredAi,
+                        Qualified = mapInfo.qualified,
+                        Ranked = mapInfo.ranked,
+                        Description = mapInfo.description ?? string.Empty,
+                        Uploader = GetUserByUserDetail(mapInfo.uploader, db),
+                        Metadata = new MetaData
+                        {
+                            SongAuthorName = mapInfo.metadata.songAuthorName,
+                            LevelAuthorName = mapInfo.metadata.levelAuthorName ?? string.Empty,
+                            BPM = mapInfo.metadata.bpm,
+                            Duration = mapInfo.metadata.duration,
+                            SongName = mapInfo.metadata.songName ?? string.Empty,
+                            SongSubName = mapInfo.metadata.songSubName
+                        },
+                        Stats = new Stats
+                        {
+                            Downloads = mapInfo.stats.downloads,
+                            Plays = mapInfo.stats.plays,
+                            Upvotes = mapInfo.stats.upvotes,
+                            Downvotes = mapInfo.stats.downvotes,
+                            Score = mapInfo.stats.score,
+                            ScoreOneDP = mapInfo.stats.scoreOneDP,
+                            Reviews = mapInfo.stats.reviews,
+                            SentimentId = (int)mapInfo.stats.sentiment
+                        },
+                        
+                        Tags = tags,
+                        Versions = mapInfo.versions.Select(v => new Data.Models.DbModels.Version
+                        {
+                            Hash = v.hash,
+                            DownloadURL = v.downloadURL,
+                            CreatedAt = v.createdAt,
+                            CoverURL = v.coverURL,
+                            Feedback = v.feedback,
+                            Key = v.key,
+                            PreviewURL = v.previewURL,
+                            SageScore = v.sageScore,
+                            StateId = (int)v.state,
+                            ScheduledAt = v.scheduledAt,
+                            TestplayAt = v.testplayAt,
+                            TestPlays = v.testplays.Select(tp => new TestPlay
+                            {
+                                Feedback = tp.feedback,
+                                FeedbackAt = tp.feedbackAt,
+                                CreatedAt = tp.createdAt,
+                                Video = tp.video,
+                                User = _db.Users.FirstOrDefault(x => x.ExternalId == tp.user.id) ?? new User
+                                {
+                                    Name = mapInfo.uploader.name,
+                                    Admin = mapInfo.uploader.admin,
+                                    Curator = mapInfo.uploader.curator,
+                                    SeniorCurator = mapInfo.uploader.seniorCurator,
+                                    PlaylistUrl = mapInfo.uploader.playlistUrl,
+                                    Avatar = mapInfo.uploader.avatar,
+                                    ExternalId = mapInfo.uploader.id,
+                                    UserTypeId = (int)mapInfo.uploader.type
+                                }
+                            }).ToList(),
+                            Difficulties = v.diffs.Select(d => new Difficulty
+                            {
+                                BlStars = d.blStars,
+                                Bombs = d.bombs,
+                                Chroma = d.chroma,
+                                Cinema = d.cinema,
+                                CharacteristicId = char.IsDigit(d.characteristic[0])
+                                    ? (int)Enum.Parse<BeatSaberDownloader.Data.Enums.Characteristic>($"_{d.characteristic}")
+                                    : (int)Enum.Parse<BeatSaberDownloader.Data.Enums.Characteristic>(d.characteristic),
+                                Difficulty2Id = (int)d.difficulty,
+                                EnvironmentId = (int)d.environment,
+                                Events = d.events,
+                                Label = d.label,
+                                Length = d.length,
+                                MaxScore = d.maxScore,
+                                ME = d.me,
+                                NE = d.ne,
+                                NJS = d.njs,
+                                Notes = d.notes,
+                                NPS = d.nps,
+                                Offset = d.offset,
+                                ParitySummary= new ParitySummary
+                                {
+                                    Errors = d.paritySummary.errors,
+                                    Warns = d.paritySummary.warns,
+                                    Resets = d.paritySummary.resets
+                                },
+                                Obstacles = d.obstacles,
+                                Seconds = d.seconds,
+                                Stars = d.stars,
+                                Vivify = d.vivify
+                            }).ToList()
+                        }).ToList()
+                    };
+
+
+                    _db.Songs.Add(dbSong);
+                    _db.SaveChanges();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error adding song {id} to DB: {Message}", mapInfo.id, ex.Message);
+                }
+
                 var files = mapInfo.GetValidFileNames(basePath);
                 songsToDownload.AddRange(files.Select(f => new DownloadInfo
                 {
@@ -163,83 +564,7 @@ namespace BeatSaberDownloader.DBUpdateService
             }
             else
             {
-                // check song name, author, versions
-                var versionHashes = song.versions.Select(v => v.hash);
-                var deletedVers = versionHashes.Except(mapInfo.versions.Select(v => v.hash)).ToList();
-                var newVers = mapInfo.versions.Select(v => v.hash).Except(versionHashes).ToList();
-                var existingVers = versionHashes.IntersectBy(mapInfo.versions.Select(v => v.hash), v => v).ToList();
-                var hasNameChanged = mapInfo.name != song.name;
-                var hasAuthorChanged = mapInfo.metadata.songAuthorName != song.metadata.songAuthorName;
-                var hasUploaderNameChanged = mapInfo.uploader.name != song.uploader.name;
-                var currFiles = song.GetValidFileNames(basePath);
-                var newFiles = mapInfo.GetValidFileNames(basePath);
-
-                foreach (var del in deletedVers)
-                {
-                    _logger.LogInformation($"\tThe update indicates the version with hash {del} has been deleted. Marking DB entry as deleted and moving the file...");
-                    // TODO: Mark the version as deleted in the DB
-                    var currFile = currFiles[del];
-                    if(!File.Exists(currFile))
-                    {
-                        _logger.LogWarning($"\tThe file {currFile} does not exist. Cannot move to deleted folder.");
-                    }
-                    else if (File.Exists($@"G:\BeatSaber\DeletedSongs\{currFile.Split("\\").Last()}"))
-                    {
-                        _logger.LogWarning($"\tThe file {currFile} is already in the deleted folder. Deleting file from song folder...");
-                        File.Delete(currFile);
-                    }
-                    else
-                    {
-                        File.Move(currFile, $@"G:\BeatSaber\DeletedSongs\{currFile.Split("\\").Last()}");
-                    }      
-                }
-                foreach (var ver in newVers)
-                {
-                    _logger.LogInformation($"\tThe update indicates the version with hash {ver} has been added. Adding to DB and marking for download...");
-                    // TODO: Add the version to the DB
-                    songsToDownload.Add(new DownloadInfo
-                    {
-                        Id = mapInfo.id,
-                        Hash = ver.Substring(ver.Length-5),
-                        Filename = newFiles[ver],
-                        DownloadURL = mapInfo.versions.First(v => v.hash == ver).downloadURL
-                    });
-                }
-                foreach(var v in existingVers)
-                {
-                    var mInfo = mapInfo.versions.First(x => x.hash == v);
-                    var sInfo = song.versions.First(x => x.hash == v);
-                    if (mInfo.downloadURL != sInfo.downloadURL && !File.Exists(currFiles[v]))
-                    {
-                        // The url changed. We need to re-download the file.
-                        _logger.LogInformation($"\tThe file {currFiles[v]} does not exist. Marking for download...");
-                        songsToDownload.Add(new DownloadInfo
-                        {
-                            Id = mapInfo.id,
-                            Hash = v.Substring(v.Length - 5),
-                            Filename = newFiles[v],
-                            DownloadURL = mInfo.downloadURL
-                        });
-                    }
-                }
-                if (hasNameChanged || hasAuthorChanged || hasUploaderNameChanged) 
-                {
-                    _logger.LogInformation($"\tThe update indicates the name or the author or the uploader has changed. This changes the filename. Updating the DB entry and renaming the files...");
-                    // TODO: Update the DB
-                    foreach (var ver in existingVers)
-                    {
-                        var oldFileName = currFiles[ver];
-                        var newFileName = newFiles[ver];
-                        if (!File.Exists(oldFileName))
-                        {
-                            _logger.LogWarning($"\tThe file {oldFileName} does not exist. Cannot rename to {newFileName}.");
-                            continue;
-                        }
-                        File.Move(oldFileName, newFileName);
-                    }
-                }
-                var index = songs.IndexOf(song);
-                songs[index] = mapInfo;
+                
             }
             
 
@@ -250,21 +575,19 @@ namespace BeatSaberDownloader.DBUpdateService
             }
         }
 
-        public void DeleteSong(MapDetail song)
+        private User GetUserByUserDetail(UserDetail userDetail, BeatSaverContext db)
         {
-            _logger.LogInformation("\tDeleting the song from the DB....");
-            _logger.LogInformation("\tMoving the song files to the deleted folder");
-            Directory.GetFiles(@"G:\BeatSaber\SongFiles", $"{song.id}*").ToList().ForEach(f =>
+            return db.Users.FirstOrDefault(x => x.ExternalId == userDetail.id) ?? new User
             {
-                var filename = Path.GetFileName(f);
-                if(File.Exists($@"G:\BeatSaber\DeletedSongs\{filename}"))
-                {
-                    _logger.LogWarning($"\tFile {filename} has already been deleted. Deleting song file instead...");
-                    File.Delete(f);
-                    return;
-                }
-                File.Move(f, $@"G:\BeatSaber\DeletedSongs\{filename}");
-            });
+                Name = userDetail.name,
+                Admin = userDetail.admin,
+                Curator = userDetail.curator,
+                SeniorCurator = userDetail.seniorCurator,
+                PlaylistUrl = userDetail.playlistUrl,
+                Avatar = userDetail.avatar,
+                ExternalId = userDetail.id,
+                UserTypeId = (int)userDetail.type
+            };
         }
     }
 }
