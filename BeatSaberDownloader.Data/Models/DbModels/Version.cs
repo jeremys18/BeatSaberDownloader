@@ -23,5 +23,6 @@ namespace BeatSaberDownloader.Data.Models.DbModels
         public virtual State State { get; set; }
         public virtual ICollection<TestPlay> TestPlays { get; set; } = new List<TestPlay>();
         public virtual ICollection<Difficulty> Difficulties { get; set; } = new List<Difficulty>();
+        public virtual Song? Song { get; set; }
     }
 }

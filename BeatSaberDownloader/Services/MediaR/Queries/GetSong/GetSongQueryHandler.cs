@@ -1,7 +1,9 @@
-﻿using BeatSaberDownloader.Data.Extentions;
-using BeatSaberDownloader.Data.Models;
+﻿using BeatSaberDownloader.Data.Consts;
+using BeatSaberDownloader.Data.DBContext;
+using BeatSaberDownloader.Data.Extentions;
+using BeatSaberDownloader.Data.Models.DbModels;
 using MediatR;
-using Newtonsoft.Json;
+using Microsoft.EntityFrameworkCore;
 
 namespace BeatSaberDownloader.Server.Services.MediaR.Queries.GetSong
 {
@@ -19,13 +21,18 @@ namespace BeatSaberDownloader.Server.Services.MediaR.Queries.GetSong
             byte[]? result;
             try
             {
-                var songFileText = await @"G:\BeatSaber\Songs.json".GetFileTextAsync();
-                var songList = JsonConvert.DeserializeObject<MapDetail[]>(songFileText);
-                var songInfo = songList.FirstOrDefault(x => x.id == query.SongId);
-                var fileNames = songInfo.GetValidFileNames(@"G:BeatSaber\SongFiles");
-                songFileText = null;
-                songList = null;
-                songInfo = null;
+                Song song;
+                using (var db = new BeatSaverContext())
+                {
+                    song = db.Songs
+                        .AsNoTracking()
+                        .Include(x => x.Metadata)
+                        .Include(x => x.Versions)
+                        .Include(x => x.Uploader) 
+                        .First(x => x.Id == query.SongId);
+                }
+
+                var fileNames = song.GetValidFileNames(BeatSaverConsts.BeatSaverSongDirectory);
 
                 result = await File.ReadAllBytesAsync(fileNames[query.VersionHash], cancellationToken);
             }

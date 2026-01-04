@@ -1,8 +1,8 @@
-﻿using BeatSaberDownloader.Data.Extentions;
-using BeatSaberDownloader.Data.Models;
+﻿using BeatSaberDownloader.Data.DBContext;
+using BeatSaberDownloader.Data.Extentions;
 using BeatSaberDownloader.Data.Models.BareModels;
 using MediatR;
-using Newtonsoft.Json;
+using Microsoft.EntityFrameworkCore;
 
 namespace BeatSaberDownloader.Server.Services.MediaR.Queries.GetAllSongs
 {
@@ -19,28 +19,34 @@ namespace BeatSaberDownloader.Server.Services.MediaR.Queries.GetAllSongs
         {
             var result = new List<Song>();
             try
-            { 
-                // For now we just use the JSon file for the current list. Will switch to Db later on
-                var songs = await @"G:\BeatSaber\Songs.json".GetFileTextAsync();
-                var songList = JsonConvert.DeserializeObject<MapDetail[]>(songs) ?? [];
+            {
+                // Yay! We finally using the DB. This should speed things up
+                var songs = new List<Data.Models.DbModels.Song>();
+                using(var db = new BeatSaverContext())
+                {
+                    songs = await db.Songs
+                        .Include(x => x.Metadata)
+                        .Include(x => x.Versions)
+                        .Include(x => x.Uploader)
+                        .AsNoTracking()
+                        .ToListAsync(cancellationToken);
+                }
 
-                foreach (var song in songList)
+                foreach (var song in songs)
                 {
                     var fileNames = song.GetValidFileNames(query.SongBasePath);
-                    foreach (var ver in song.versions)
+                    foreach (var ver in song.Versions)
                     {
                         result.Add(new Song
                         {
-                            Id = song.id,
-                            Name = song.name,
-                            BeatSaverDownloadUrl = ver.downloadURL,
-                            FileName = fileNames[ver.hash],
-                            VersionHash = ver.hash
+                            Id = song.Id,
+                            Name = song.Name,
+                            BeatSaverDownloadUrl = ver.DownloadURL,
+                            FileName = fileNames[ver.Hash],
+                            VersionHash = ver.Hash
                         });
                     }
                 }
-
-                songList = null;
             }
             catch (Exception ex)
             {

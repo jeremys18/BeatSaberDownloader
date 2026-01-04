@@ -1,7 +1,7 @@
-using BeatSaberDownloader.Data.Models;
 using BeatSaberDownloader.Data.Models.UpdateSrvc;
-using BeatSaberDownloader.Data.Extentions;
 using Newtonsoft.Json;
+using BeatSaberDownloader.Data.DBContext;
+using Microsoft.EntityFrameworkCore;
 
 namespace BeatSaberDownloader.DownloadService
 {
@@ -44,25 +44,21 @@ namespace BeatSaberDownloader.DownloadService
                 catch (Exception downloadEx)
                 {
                     _logger.LogWarning("Initial download attempt failed for {filename}. Attempting to get updated URL from songs.json...", info.Filename);
-                    var jsonFilePath = @"G:\BeatSaber\songs.json";
-                    var songData = string.Empty;
-                    using (var stream = jsonFilePath.GetFileAccess(FileMode.Open, FileAccess.Read))
-                    using (var reader = new StreamReader(stream))
-                    {
-                        songData = await reader.ReadToEndAsync();
-                    }
+                    
                     try
                     {
-                        var songs = JsonConvert.DeserializeObject<MapDetail[]>(songData) ?? throw new Exception("Unable to parse songs.json file...");
-                        var curUrl = songs.First(s => s.id == info.Id).versions.First(y => y.hash.EndsWith(info.Hash)).downloadURL ?? throw new Exception("Could not find song in songs.json to get updated download URL...");
-
+                        string url = string.Empty;
+                        using (var db = new BeatSaverContext())
+                        {
+                            url = (await db.Versions.Include(x => x.Song).FirstOrDefaultAsync(v => v.Hash.EndsWith(info.Hash) && v.Song!.Id == info.Id))?.DownloadURL ?? throw new Exception("Could not find song in the DB to get updated download URL...");
+                        }
                         // Retry with new URL. 
                         await DownloadSong(new DownloadInfo
                         {
                             Id = info.Id,
                             Hash = info.Hash,
                             Filename = info.Filename,
-                            DownloadURL = curUrl
+                            DownloadURL = url
                         });
                     }
                     catch (Exception ee)
