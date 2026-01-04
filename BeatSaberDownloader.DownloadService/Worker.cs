@@ -1,7 +1,8 @@
 using BeatSaberDownloader.Data.Models.UpdateSrvc;
 using Newtonsoft.Json;
-using BeatSaberDownloader.Data.DBContext;
 using Microsoft.EntityFrameworkCore;
+using BeatSaberDownloader.Data.Consts;
+using BeatSaberDownloader.Data.DBContext;
 
 namespace BeatSaberDownloader.DownloadService
 {
@@ -13,7 +14,7 @@ namespace BeatSaberDownloader.DownloadService
         public Worker(ILogger<Worker> logger)
         {
             _logger = logger;
-            _watcher = new FileSystemWatcher(@"G:\BeatSaber\Songs awaiting download")
+            _watcher = new FileSystemWatcher(DBUpdateConsts.SongsToDownloadFolder)
             {
                 NotifyFilter = NotifyFilters.FileName,
                 EnableRaisingEvents = true,
