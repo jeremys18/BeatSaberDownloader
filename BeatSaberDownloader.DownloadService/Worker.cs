@@ -44,7 +44,7 @@ namespace BeatSaberDownloader.DownloadService
                 }
                 catch (Exception downloadEx)
                 {
-                    _logger.LogWarning("Initial download attempt failed for {filename}. Attempting to get updated URL from songs.json...", info.Filename);
+                    _logger.LogWarning("Initial download attempt failed for {filename}. Attempting to get updated URL from DB...", info.Filename);
                     
                     try
                     {
