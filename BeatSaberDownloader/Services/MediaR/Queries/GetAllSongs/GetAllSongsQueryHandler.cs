@@ -29,13 +29,14 @@ namespace BeatSaberDownloader.Server.Services.MediaR.Queries.GetAllSongs
                         .Include(x => x.Versions)
                         .Include(x => x.Uploader)
                         .AsNoTracking()
+                        .Where(s => s.DeletedAt == null)
                         .ToListAsync(cancellationToken);
                 }
 
                 foreach (var song in songs)
                 {
                     var fileNames = song.GetValidFileNames(query.SongBasePath);
-                    foreach (var ver in song.Versions)
+                    foreach (var ver in song.Versions.Where(x => x.DeletedAt == null))
                     {
                         result.Add(new Song
                         {

@@ -24,6 +24,7 @@ namespace BeatSaberDownloader.Server.Services.MediaR.Queries.GetSong
                 Song song;
                 using (var db = new BeatSaverContext())
                 {
+                    // We specifically want to allow getting deleted songs here for archival purposes. If a song is deleted but still in the DB, we should be able to get it.
                     song = db.Songs
                         .AsNoTracking()
                         .Include(x => x.Metadata)
