@@ -48,6 +48,7 @@ namespace BeatSaberDownloader.Data.Enums
         Monstercat2Environment = 43, 
         MetallicaEnvironment = 44,
         Halloween2Environment = 45,
-        GridEnvironment = 46
+        GridEnvironment = 46,
+        ColdplayEnvironment = 47
     }
 }

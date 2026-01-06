@@ -49,7 +49,8 @@ using( values
 	(43, 'Monstercat2Environment'),
 	(44, 'MetallicaEnvironment'),
 	(45, 'Halloween2Environment'),
-	(46, 'GridEnvironment')
+	(46, 'GridEnvironment'),
+	(47, 'ColdplayEnvironment')
 ) as src (Id, Name)
 on tgt.Id = src.Id
 when matched then
