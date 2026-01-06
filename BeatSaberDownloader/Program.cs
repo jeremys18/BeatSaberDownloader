@@ -26,7 +26,8 @@ var columnOptions = new ColumnOptions
 // Create Serilog logger
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
-    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("System", LogEventLevel.Warning)
     .Enrich.FromLogContext()
     .WriteTo.Console()
     .WriteTo.File("Logs/Server.log", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Information)
@@ -34,6 +35,7 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 // Replace default logging with Serilog
+builder.Logging.ClearProviders();
 builder.Host.UseSerilog();
 
 
