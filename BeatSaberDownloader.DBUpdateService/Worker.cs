@@ -328,7 +328,7 @@ namespace BeatSaberDownloader.DBUpdateService
             // Delete removed versions
             foreach (var del in deletedVersions)
             {
-                _logger.LogInformation($"\tThe update indicates the version with hash {del} has been deleted. Marking DB entry as deleted and moving the file...");
+                _logger.LogInformation($"\tThe update indicates the version with hash {del.Hash} has been deleted. Marking DB entry as deleted and moving the file...");
                 del.DeletedAt = DateTime.UtcNow;
 
                 DeleteSongFile(currFiles[del.Hash]);
