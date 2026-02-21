@@ -16,6 +16,7 @@ namespace BeatSaberDownloader.Data.Consts
         // Data
         public const string BeatSaverDataDirectory = @"G:\BeatSaber";
         public const string BeatSaverSongDirectory = @"G:\BeatSaber\SongFiles";
+        public const string DeletedSongsFolder = @"G:\BeatSaber\DeletedSongs"; // The folder where deleted songs are moved to
         public const string BeatSaverSongInfoFile = "songs.json";
         public const string TempSongFile = "temp.json";
     }

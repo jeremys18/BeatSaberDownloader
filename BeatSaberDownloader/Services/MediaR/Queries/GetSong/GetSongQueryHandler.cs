@@ -34,7 +34,14 @@ namespace BeatSaberDownloader.Server.Services.MediaR.Queries.GetSong
                 }
 
                 var fileNames = song.GetValidFileNames(BeatSaverConsts.BeatSaverSongDirectory);
+                var file = fileNames[query.VersionHash];
 
+                if(!File.Exists(file))
+                {
+                    _logger.LogWarning("File for song {SongId} version {VersionHash} does not exist at path {FilePath}. Checking the deleted folder", query.SongId, query.VersionHash, file);
+                    fileNames = song.GetValidFileNames(BeatSaverConsts.DeletedSongsFolder);
+                    file = fileNames[query.VersionHash];
+                }
                 result = await File.ReadAllBytesAsync(fileNames[query.VersionHash], cancellationToken);
             }
             catch (Exception ex)
