@@ -15,6 +15,7 @@ namespace BeatSaberDownloader.Data.DBContext
         {
         }
 
+        public DbSet<BannedIP> BanedIPs { get; set; } = null!;
         public DbSet<Characteristic> Characteristics { get; set; } = null!;
         public DbSet<DeclaredAI> DeclaredAIs { get; set; } = null!;
         public DbSet<Difficulty> Difficulties { get; set; } = null!;

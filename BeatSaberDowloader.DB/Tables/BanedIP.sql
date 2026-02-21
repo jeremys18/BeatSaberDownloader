@@ -1,0 +1,6 @@
+﻿CREATE TABLE [Server].[BannedIP]
+(
+	[Id] INT NOT NULL PRIMARY KEY, 
+    [IP] VARCHAR(15) NOT NULL, 
+    [Updated] DATETIME2 NOT NULL 
+)

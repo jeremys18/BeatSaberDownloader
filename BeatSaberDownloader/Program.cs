@@ -1,3 +1,5 @@
+using BeatSaberDownloader.Data.DBContext;
+using BeatSaberDownloader.Data.Models.DbModels;
 using Microsoft.Extensions.Primitives;
 using Serilog;
 using Serilog.Events;
@@ -78,12 +80,26 @@ app.Use(async (context, next) =>
 
     logger.LogInformation("Request {Method} {Path} from {ClientIP}...", context.Request.Method, path, clientIp);
 
+    using var dbContext = new BeatSaverContext();
+    if (dbContext.BanedIPs.Any(x => x.IP == clientIp))
+    {
+        Console.WriteLine("Blocked request from banned IP {ClientIP}", clientIp);
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        await context.Response.WriteAsync("Forbidden");
+        return;
+    }
+
     var sw = Stopwatch.StartNew();
     await next();
     sw.Stop();
 
     var statusCode = context.Response?.StatusCode ?? 0;
     logger.LogInformation("Responded {StatusCode} in {ElapsedMs}ms.", statusCode, sw.ElapsedMilliseconds);
+    if (statusCode == 404)
+    {
+        dbContext.BanedIPs.Add(new BannedIP { IP = clientIp, Updated = DateTime.UtcNow });
+        dbContext.SaveChanges();
+    }
 });
 
 app.Urls.Clear();

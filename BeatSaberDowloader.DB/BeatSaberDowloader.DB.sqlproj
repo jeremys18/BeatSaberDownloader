@@ -90,6 +90,8 @@
     <Build Include="Tables\User.sql" />
     <Build Include="Tables\UserType.sql" />
     <Build Include="Tables\Version.sql" />
+    <Build Include="Schemas\Server.sql" />
+    <Build Include="Tables\BanedIP.sql" />
   </ItemGroup>
   <ItemGroup>
     <RefactorLog Include="BeatSaberDowloader.DB.refactorlog" />
