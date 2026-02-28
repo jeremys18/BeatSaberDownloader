@@ -83,7 +83,7 @@ app.Use(async (context, next) =>
     using var dbContext = new BeatSaverContext();
     if (dbContext.BanedIPs.Any(x => x.IP == clientIp))
     {
-        Console.WriteLine("Blocked request from banned IP {ClientIP}", clientIp);
+        Console.WriteLine($"Blocked request from banned IP {clientIp}");
         context.Response.StatusCode = StatusCodes.Status403Forbidden;
         await context.Response.WriteAsync("Forbidden");
         return;
@@ -97,6 +97,7 @@ app.Use(async (context, next) =>
     logger.LogInformation("Responded {StatusCode} in {ElapsedMs}ms.", statusCode, sw.ElapsedMilliseconds);
     if (statusCode == 404)
     {
+        logger.LogInformation("Blocking IP {ClientIP} due to 404 response.", clientIp);
         dbContext.BanedIPs.Add(new BannedIP { IP = clientIp, Updated = DateTime.UtcNow });
         dbContext.SaveChanges();
     }
