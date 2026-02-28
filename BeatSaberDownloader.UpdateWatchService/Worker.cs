@@ -52,6 +52,7 @@ namespace BeatSaberDownloader.UpdateWatchService
                             if(!IsValidJson(message))
                             {
                                 _logger.LogWarning("\tReconstructed message is still invalid JSON. Saving to temp and waiting for more data...");
+                                id = "Temp File Required";
                             }
                             else
                             {
